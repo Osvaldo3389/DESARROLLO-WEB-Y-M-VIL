@@ -1,0 +1,6 @@
+Azul oscuro → #1E3A8A
+ Azul        → #3B82F6
+Blanco      → #FFFFFF
+ Gris oscuro → #1F2937
+Rojo oscuro → #991B1B
+ Rojo        → #EF4444
