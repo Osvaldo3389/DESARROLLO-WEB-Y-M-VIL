@@ -4,3 +4,4 @@ Blanco      → #FFFFFF
  Gris oscuro → #1F2937
 Rojo oscuro → #991B1B
  Rojo        → #EF4444
+s
