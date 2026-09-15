@@ -1,8 +1,7 @@
 """
 Modelos Pydantic para validar los datos que entran y salen de la API.
 
-Esto es solo un EJEMPLO con un "producto" (nombre, precio, stock).
-Cambia los campos por los que necesite tu entidad real.
+
 """
 
 from pydantic import BaseModel, Field
