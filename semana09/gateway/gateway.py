@@ -19,6 +19,11 @@ security = HTTPBearer(
     auto_error=False
 )
 
+AUTH_SERVICE_URL =os.getenv(
+    "AUTH_SERVICE_URL",
+    "http://127.0.0.1:8100"
+)
+
 VAULT_ADDR= os.getenv(
     "VAULT_ADDR", "http://localhost:8200"
 )
@@ -60,18 +65,29 @@ async def autenticate_client(
             status_code=401,
             detail="barer token no proporcionado"
         )
-    vault_secrets= (
+    gateway_secrets= (
         await get_gateway_secrets()
     )
-    expected_token= vault_secrets["client_token"]
-    received_token= credentials.credentials
-    valid = secrets.compare_digest(received_token, expected_token)
-    if not valid:
-        raise HTTPException(
-            status_code=401,
-            detail="token de cliente no válido"
+   instrospection_secret=(
+       gateway_secrets["auth_instrospection_secrets"]
+   )
+try:
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        response = await client.post(
+            f"{AUTH_SERVICE_URL}/introspect",
+            json={"token": credentials.credentials},
+            headers={"X-Gateway-Auth-Secret": introspection_secret
+                    }
         )
-    return {"client_id": "student-client", "backend_secret": vault_secrets["backend_shared_secret"]}
+        expect httpx.RequestError:
+            raise HTTPException(
+                status_code=503,
+                detail="Authentication service no disponible"
+            )
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail="Authentication service no disponible"
 BACKEND_URL = "http://localhost:9000"
 BACKEND_URL2 = "http://localhost:9100"
 #@app.get("/api/products")
