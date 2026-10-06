@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot con Prolog</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; background: #1e1e43; }
+        #chat-box { width: 400px; height: 300px; border: 1px solid #000000; background: #7a7ea7; padding: 10px; overflow-y: scroll; margin-bottom: 10px; }
+        input { width: 310px; padding: 8px; }
+        button { padding: 8px; }
+        .user { color: rgb(41, 182, 50); }
+        .bot { color: green; }
+    </style>
+</head>
+<body>
+
+    <h2>Chatbot impulsado por Prolog</h2>
+    <div id="chat-box"></div>
+    <input type="text" id="mensajeInput" placeholder="Escribe 'hola', 'como estas'..." onkeypress="if(event.key === 'Enviar' || event.key === 'Enter') enviarMensaje()">
+    <button onclick="enviarMensaje()">Enviar</button>
+
+    <script>
+        async function enviarMensaje() {
+            const input = document.getElementById('mensajeInput');
+            const chatBox = document.getElementById('chat-box');
+            const mensaje = input.value.trim();
+
+            if (!mensaje) return;
+
+            // Mostrar mensaje del usuario
+            chatBox.innerHTML += `<p class="user"><b>Tú:</b> ${mensaje}</p>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // Petición al servidor de Prolog
+                const response = await fetch(`http://localhost:8080/chat?mensaje=${encodeURIComponent(mensaje)}`);
+                const data = await response.json();
+
+                // Mostrar respuesta de Prolog
+                chatBox.innerHTML += `<p class="bot"><b>Prolog:</b> ${data.respuesta}</p>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (error) {
+                chatBox.innerHTML += `<p class="bot" style="color:red;"><b>Error:</b> No se pudo conectar con el servidor Prolog.</p>`;
+            }
+        }
+    </script>
+
+</body>
+</html>
