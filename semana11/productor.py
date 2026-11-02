@@ -1,11 +1,3 @@
-# Texto Libre
-# python productor.py --formato texto --mensaje "Hola mundo Stomp"
-# Text de ancho fijo
-# python productor.py --formato fijo --id 123 --cliente "Ernesto Vivanco" --monto 123.45
-# XML
-# python productor.py --formato xml --id 123 --cliente "Ernesto Vivanco" --monto 123.45
-# JSON
-# python productor.py --formato json --id 123 --cliente "Ernesto Vivanco" --monto 123.45
 import stomp
 import argparse
 import json
@@ -18,7 +10,6 @@ def construir_mensaje(formato: str, pedido: dict, texto: str) -> tuple[str, str]
     if formato == "texto":
         return texto, "text/plain; charset=utf-8"
     if formato == "fijo":
-        # Contrato Fixed 36 chars: ID[6], CLIENTE[20], MONTO[10]
         identificador = str(pedido["id"])
         cliente = str(pedido["cliente"])
         monto = Decimal(pedido["monto"])
@@ -40,14 +31,14 @@ def construir_mensaje(formato: str, pedido: dict, texto: str) -> tuple[str, str]
     raise ValueError(f"Formato desconocido: {formato}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Productor STOMP")
-    parser.add_argument("--formato", choices=["texto", "fijo", "xml", "json"], required=True)
-    parser.add_argument("--mensaje", default="Hola desde el productor STOMP")
-    parser.add_argument("--id", default="123")
-    parser.add_argument("--cliente", default="Ed jobs")
-    parser.add_argument("--monto", default="123.45")
+    parser = argparse.ArgumentParser(description='Productor STOMP')
+    parser.add_argument("--formato", choices=['json', 'xml',"fijo","texto"], required=True)
+    parser.add_argument("--mensaje", default="hola desde STOMP")
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", default=61613)
+    parser.add_argument("--cliente", default="Ed jobs")
+    parser.add_argument("--port", type=int, default=61613)
+    parser.add_argument("--id", default="123")
+    parser.add_argument("--monto", default="123.45")
     parser.add_argument("--usuario", default="demo")
     parser.add_argument("--clave", default="demo123")
     args = parser.parse_args()
