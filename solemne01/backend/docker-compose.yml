@@ -263,7 +263,7 @@ services:
   frontend:   # PHP + Bootstrap (P01–P11), servido detrás del gateway (sin puerto propio)
     image: php:8.3-apache
     restart: unless-stopped
-    volumes: ["./frontend:/var/www/html:ro"]
+    volumes: ["../frontend:/var/www/html:ro"]   # solemne01/frontend
     networks: [edge]
 
   servipag-sandbox:   # SIMULADOR del proveedor externo de pagos (no es parte del backend)

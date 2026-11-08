@@ -54,7 +54,8 @@ function entorno() {
     AUTH_URL: url("auth"), INVENTORY_URL: url("inventory"), ORDERS_URL: url("orders"), CLIENTS_URL: url("clients"),
     PAYMENTS_URL: url("payments"), ANALYTICS_URL: url("analytics"), GRAPHQL_URL: url("graphql"),
     MAIL_URL: url("mail-sandbox"), SERVIPAG_URL: url("servipag-sandbox"),
-    FRONTEND_DIR: path.join(RAIZ, "frontend"),
+    // la página vive en ../frontend (repositorio: solemne01/frontend); si no existe, en ./frontend
+    FRONTEND_DIR: process.env.FRONTEND_DIR || (fs.existsSync(path.join(RAIZ, "..", "frontend", "index.php")) ? path.join(RAIZ, "..", "frontend") : path.join(RAIZ, "frontend")),
     PUBLIC_URL: URL_PAGINA,
     WEBHOOK_URL: `https://127.0.0.1:${GW_PORT}/api/v1/payments/webhooks/servipag`,
     SERVIPAG_PUBLIC_URL: `http://localhost:${porNombre["servipag-sandbox"].puerto}`,

@@ -1,6 +1,12 @@
 # Fukusuke Sushi-Delivery — Backend seguro + página (Evaluación Unidad 2)
 
-Backend de microservicios para el **Caso 19 (Fukusuke Sushi-Delivery)** integrado al frontend (carpeta `frontend/`).
+Backend de microservicios para el **Caso 19 (Fukusuke Sushi-Delivery)** integrado al frontend.
+
+```
+solemne01/
+├── backend/    ← este proyecto (microservicios, gateways, base de datos, scripts y pruebas)
+└── frontend/   ← la página (PHP + Bootstrap v1.1, conectada a la API); el gateway la sirve en https://localhost:8443
+```
 Equipo: **Osvaldo Caraccioli · Benjamín Orellana** — Desarrollo web y móvil, UNAB.
 
 ---

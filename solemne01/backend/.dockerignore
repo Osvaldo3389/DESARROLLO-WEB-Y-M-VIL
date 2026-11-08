@@ -2,6 +2,5 @@ node_modules
 secrets
 .run
 tests
-frontend
 *.md
 .env
