@@ -1,0 +1,90 @@
+# OPCIONAL: usa HashiCorp Vault como administrador de secretos en lugar de Docker secrets.
+#   docker compose -f docker-compose.yml -f docker-compose.vault.yml up -d vault
+#   ./scripts/vault-init.sh                    # carga ./secrets en Vault y crea un AppRole por servicio
+#   docker compose -f docker-compose.yml -f docker-compose.vault.yml up -d
+# Modo dev de Vault: SOLO para la demostración local (no persistente).
+services:
+  vault:
+    image: hashicorp/vault:1.18
+    cap_add: [IPC_LOCK]
+    command: ["server", "-dev", "-dev-listen-address=0.0.0.0:8200"]
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID_FILE: /run/secrets/vault-root-token
+    secrets: [vault-root-token]
+    networks: [backend]
+    ports: ["127.0.0.1:8200:8200"]   # solo para ejecutar vault-init desde el equipo
+  auth:
+    environment:
+      SECRET_PROVIDER: vault
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID_FILE: /run/secrets/vault-auth-role-id
+      VAULT_SECRET_ID_FILE: /run/secrets/vault-auth-secret-id
+    secrets: [vault-auth-role-id, vault-auth-secret-id]
+  inventory:
+    environment:
+      SECRET_PROVIDER: vault
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID_FILE: /run/secrets/vault-inventory-role-id
+      VAULT_SECRET_ID_FILE: /run/secrets/vault-inventory-secret-id
+    secrets: [vault-inventory-role-id, vault-inventory-secret-id]
+  orders:
+    environment:
+      SECRET_PROVIDER: vault
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID_FILE: /run/secrets/vault-orders-role-id
+      VAULT_SECRET_ID_FILE: /run/secrets/vault-orders-secret-id
+    secrets: [vault-orders-role-id, vault-orders-secret-id]
+  clients:
+    environment:
+      SECRET_PROVIDER: vault
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID_FILE: /run/secrets/vault-clients-role-id
+      VAULT_SECRET_ID_FILE: /run/secrets/vault-clients-secret-id
+    secrets: [vault-clients-role-id, vault-clients-secret-id]
+  payments:
+    environment:
+      SECRET_PROVIDER: vault
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID_FILE: /run/secrets/vault-payments-role-id
+      VAULT_SECRET_ID_FILE: /run/secrets/vault-payments-secret-id
+    secrets: [vault-payments-role-id, vault-payments-secret-id]
+  analytics:
+    environment:
+      SECRET_PROVIDER: vault
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID_FILE: /run/secrets/vault-analytics-role-id
+      VAULT_SECRET_ID_FILE: /run/secrets/vault-analytics-secret-id
+    secrets: [vault-analytics-role-id, vault-analytics-secret-id]
+  graphql:
+    environment:
+      SECRET_PROVIDER: vault
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID_FILE: /run/secrets/vault-graphql-role-id
+      VAULT_SECRET_ID_FILE: /run/secrets/vault-graphql-secret-id
+    secrets: [vault-graphql-role-id, vault-graphql-secret-id]
+  gateway:
+    environment:
+      SECRET_PROVIDER: vault
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE_ID_FILE: /run/secrets/vault-gateway-role-id
+      VAULT_SECRET_ID_FILE: /run/secrets/vault-gateway-secret-id
+    secrets: [vault-gateway-role-id, vault-gateway-secret-id]
+
+secrets:
+  vault-root-token: { file: ./secrets/vault-root-token }
+  vault-auth-role-id: { file: ./secrets/vault/auth-role-id }
+  vault-auth-secret-id: { file: ./secrets/vault/auth-secret-id }
+  vault-inventory-role-id: { file: ./secrets/vault/inventory-role-id }
+  vault-inventory-secret-id: { file: ./secrets/vault/inventory-secret-id }
+  vault-orders-role-id: { file: ./secrets/vault/orders-role-id }
+  vault-orders-secret-id: { file: ./secrets/vault/orders-secret-id }
+  vault-clients-role-id: { file: ./secrets/vault/clients-role-id }
+  vault-clients-secret-id: { file: ./secrets/vault/clients-secret-id }
+  vault-payments-role-id: { file: ./secrets/vault/payments-role-id }
+  vault-payments-secret-id: { file: ./secrets/vault/payments-secret-id }
+  vault-analytics-role-id: { file: ./secrets/vault/analytics-role-id }
+  vault-analytics-secret-id: { file: ./secrets/vault/analytics-secret-id }
+  vault-graphql-role-id: { file: ./secrets/vault/graphql-role-id }
+  vault-graphql-secret-id: { file: ./secrets/vault/graphql-secret-id }
+  vault-gateway-role-id: { file: ./secrets/vault/gateway-role-id }
+  vault-gateway-secret-id: { file: ./secrets/vault/gateway-secret-id }

@@ -1,0 +1,32 @@
+{
+  "name": "fukusuke-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend seguro de Fukusuke Sushi-Delivery (Caso 19) - microservicios Node.js + MySQL",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "setup:reset": "node scripts/setup.js --reset",
+    "setup:demo": "node scripts/setup.js --demo",
+    "start": "node scripts/start.js",
+    "start:bg": "node scripts/start.js --bg",
+    "stop": "node scripts/stop.js",
+    "secrets": "node scripts/gen-secrets.js",
+    "db:init": "node scripts/init-db.js",
+    "seed": "node scripts/seed.js",
+    "seed:demo": "node scripts/seed.js --demo",
+    "test": "node scripts/test.js",
+    "load": "k6 run tests/load/fukusuke.js"
+  },
+  "dependencies": {
+    "bcryptjs": "2.4.3",
+    "dataloader": "2.2.3",
+    "express": "4.21.2",
+    "graphql": "16.11.0",
+    "jsonwebtoken": "9.0.2",
+    "mysql2": "3.14.1",
+    "node-forge": "1.3.1"
+  }
+}

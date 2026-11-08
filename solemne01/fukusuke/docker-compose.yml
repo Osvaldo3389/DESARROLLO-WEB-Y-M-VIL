@@ -1,0 +1,346 @@
+# Fukusuke Sushi-Delivery — backend seguro (Evaluación Unidad 2)
+# Solo el API Gateway publica un puerto (443). Los microservicios y MySQL viven en redes internas.
+# Los simuladores de proveedores externos (Servipag y correo) publican 8090/8025 solo para desarrollo.
+name: fukusuke
+
+x-servicio: &servicio
+  build: .
+  image: fukusuke/backend:1.0
+  restart: unless-stopped
+  depends_on:
+    db-init:
+      condition: service_completed_successfully
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db-root
+    secrets: [db-root]
+    volumes: [mysql-data:/var/lib/mysql]
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$(cat /run/secrets/db-root) --silent"]
+      interval: 5s
+      retries: 30
+
+  db-init:   # crea un esquema y un usuario por servicio y aplica migraciones (se ejecuta y termina)
+    build: .
+    image: fukusuke/backend:1.0
+    command: ["node", "scripts/init-db.js"]
+    environment:
+      DB_HOST: mysql
+    secrets: [db-root, db-auth, db-inventory, db-orders, db-clients, db-payments, db-analytics]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [data]
+
+  auth:
+    <<: *servicio
+    command: ["node", "services/auth/index.js"]
+    environment:
+      SERVICE_NAME: auth
+      PORT: "8086"
+      AUTH_URL: http://auth:8086
+      INVENTORY_URL: http://inventory:8081
+      ORDERS_URL: http://orders:8082
+      CLIENTS_URL: http://clients:8083
+      PAYMENTS_URL: http://payments:8084
+      ANALYTICS_URL: http://analytics:8085
+      GRAPHQL_URL: http://graphql:4000
+      MAIL_URL: http://mail-sandbox:8025
+      SERVIPAG_URL: http://servipag-sandbox:8090
+      DB_HOST: mysql
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+      COBERTURA_COMUNAS: ${COBERTURA_COMUNAS:-Maipú}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-30000}
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-file}
+    secrets: [auth-jwt-private-key, gw-auth-token, clients-auth-token, db-auth]
+    networks: [backend, data]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8086/health || exit 1"]
+      interval: 10s
+      retries: 5
+
+  inventory:
+    <<: *servicio
+    command: ["node", "services/inventory/index.js"]
+    environment:
+      SERVICE_NAME: inventory
+      PORT: "8081"
+      AUTH_URL: http://auth:8086
+      INVENTORY_URL: http://inventory:8081
+      ORDERS_URL: http://orders:8082
+      CLIENTS_URL: http://clients:8083
+      PAYMENTS_URL: http://payments:8084
+      ANALYTICS_URL: http://analytics:8085
+      GRAPHQL_URL: http://graphql:4000
+      MAIL_URL: http://mail-sandbox:8025
+      SERVIPAG_URL: http://servipag-sandbox:8090
+      DB_HOST: mysql
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+      COBERTURA_COMUNAS: ${COBERTURA_COMUNAS:-Maipú}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-30000}
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-file}
+    secrets: [gw-inventory-token, orders-inventory-token, gql-inventory-read, db-inventory]
+    networks: [backend, data]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/health || exit 1"]
+      interval: 10s
+      retries: 5
+
+  orders:
+    <<: *servicio
+    command: ["node", "services/orders/index.js"]
+    environment:
+      SERVICE_NAME: orders
+      PORT: "8082"
+      AUTH_URL: http://auth:8086
+      INVENTORY_URL: http://inventory:8081
+      ORDERS_URL: http://orders:8082
+      CLIENTS_URL: http://clients:8083
+      PAYMENTS_URL: http://payments:8084
+      ANALYTICS_URL: http://analytics:8085
+      GRAPHQL_URL: http://graphql:4000
+      MAIL_URL: http://mail-sandbox:8025
+      SERVIPAG_URL: http://servipag-sandbox:8090
+      DB_HOST: mysql
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+      COBERTURA_COMUNAS: ${COBERTURA_COMUNAS:-Maipú}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-30000}
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-file}
+    secrets: [gw-orders-token, payments-orders-token, gql-orders-read, orders-inventory-token, orders-clients-token, analytics-ingest-token, db-orders]
+    networks: [backend, data]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8082/health || exit 1"]
+      interval: 10s
+      retries: 5
+
+  clients:
+    <<: *servicio
+    command: ["node", "services/clients/index.js"]
+    environment:
+      SERVICE_NAME: clients
+      PORT: "8083"
+      AUTH_URL: http://auth:8086
+      INVENTORY_URL: http://inventory:8081
+      ORDERS_URL: http://orders:8082
+      CLIENTS_URL: http://clients:8083
+      PAYMENTS_URL: http://payments:8084
+      ANALYTICS_URL: http://analytics:8085
+      GRAPHQL_URL: http://graphql:4000
+      MAIL_URL: http://mail-sandbox:8025
+      SERVIPAG_URL: http://servipag-sandbox:8090
+      DB_HOST: mysql
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+      COBERTURA_COMUNAS: ${COBERTURA_COMUNAS:-Maipú}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-30000}
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-file}
+    secrets: [gw-clients-token, orders-clients-token, payments-clients-token, clients-auth-token, mail-api-key-clients, rut-encryption-key, db-clients]
+    networks: [backend, data, proveedores]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8083/health || exit 1"]
+      interval: 10s
+      retries: 5
+
+  payments:
+    <<: *servicio
+    command: ["node", "services/payments/index.js"]
+    environment:
+      SERVICE_NAME: payments
+      PORT: "8084"
+      AUTH_URL: http://auth:8086
+      INVENTORY_URL: http://inventory:8081
+      ORDERS_URL: http://orders:8082
+      CLIENTS_URL: http://clients:8083
+      PAYMENTS_URL: http://payments:8084
+      ANALYTICS_URL: http://analytics:8085
+      GRAPHQL_URL: http://graphql:4000
+      MAIL_URL: http://mail-sandbox:8025
+      SERVIPAG_URL: http://servipag-sandbox:8090
+      DB_HOST: mysql
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+      COBERTURA_COMUNAS: ${COBERTURA_COMUNAS:-Maipú}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-30000}
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-file}
+    secrets: [gw-payments-token, gql-payments-read, payments-orders-token, payments-clients-token, servipag-api-key, servipag-webhook-secret, mail-api-key-payments, db-payments]
+    networks: [backend, data, proveedores]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8084/health || exit 1"]
+      interval: 10s
+      retries: 5
+
+  analytics:
+    <<: *servicio
+    command: ["node", "services/analytics/index.js"]
+    environment:
+      SERVICE_NAME: analytics
+      PORT: "8085"
+      AUTH_URL: http://auth:8086
+      INVENTORY_URL: http://inventory:8081
+      ORDERS_URL: http://orders:8082
+      CLIENTS_URL: http://clients:8083
+      PAYMENTS_URL: http://payments:8084
+      ANALYTICS_URL: http://analytics:8085
+      GRAPHQL_URL: http://graphql:4000
+      MAIL_URL: http://mail-sandbox:8025
+      SERVIPAG_URL: http://servipag-sandbox:8090
+      DB_HOST: mysql
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+      COBERTURA_COMUNAS: ${COBERTURA_COMUNAS:-Maipú}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-30000}
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-file}
+    secrets: [gw-analytics-token, analytics-ingest-token, db-analytics]
+    networks: [backend, data]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8085/health || exit 1"]
+      interval: 10s
+      retries: 5
+
+  graphql:
+    <<: *servicio
+    command: ["node", "graphql-gateway/index.js"]
+    environment:
+      SERVICE_NAME: graphql
+      PORT: "4000"
+      AUTH_URL: http://auth:8086
+      INVENTORY_URL: http://inventory:8081
+      ORDERS_URL: http://orders:8082
+      CLIENTS_URL: http://clients:8083
+      PAYMENTS_URL: http://payments:8084
+      ANALYTICS_URL: http://analytics:8085
+      GRAPHQL_URL: http://graphql:4000
+      MAIL_URL: http://mail-sandbox:8025
+      SERVIPAG_URL: http://servipag-sandbox:8090
+      DB_HOST: mysql
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+      COBERTURA_COMUNAS: ${COBERTURA_COMUNAS:-Maipú}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-30000}
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-file}
+    secrets: [gw-graphql-token, gql-orders-read, gql-inventory-read, gql-payments-read]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/health || exit 1"]
+      interval: 10s
+      retries: 5
+
+  gateway:
+    <<: *servicio
+    command: ["node", "gateway/index.js"]
+    environment:
+      SERVICE_NAME: gateway
+      PORT: "8443"
+      FRONTEND_URL: http://frontend:80
+      AUTH_URL: http://auth:8086
+      INVENTORY_URL: http://inventory:8081
+      ORDERS_URL: http://orders:8082
+      CLIENTS_URL: http://clients:8083
+      PAYMENTS_URL: http://payments:8084
+      ANALYTICS_URL: http://analytics:8085
+      GRAPHQL_URL: http://graphql:4000
+      MAIL_URL: http://mail-sandbox:8025
+      SERVIPAG_URL: http://servipag-sandbox:8090
+      DB_HOST: mysql
+      PUBLIC_URL: ${PUBLIC_URL:-https://localhost}
+      COBERTURA_COMUNAS: ${COBERTURA_COMUNAS:-Maipú}
+      OUTBOX_INTERVAL_MS: ${OUTBOX_INTERVAL_MS:-30000}
+      SECRET_PROVIDER: ${SECRET_PROVIDER:-file}
+    secrets: [gw-auth-token, gw-inventory-token, gw-orders-token, gw-clients-token, gw-payments-token, gw-analytics-token, gw-graphql-token, servipag-webhook-secret, tls-gateway-cert, tls-gateway-key]
+    ports: ["443:8443"]          # ÚNICO puerto publicado del backend
+    networks: [edge, backend, proveedores]
+    depends_on:
+      auth: { condition: service_healthy }
+      inventory: { condition: service_healthy }
+      orders: { condition: service_healthy }
+      clients: { condition: service_healthy }
+      payments: { condition: service_healthy }
+      analytics: { condition: service_healthy }
+      graphql: { condition: service_healthy }
+      frontend: { condition: service_started }
+
+  frontend:   # PHP + Bootstrap (P01–P11), servido detrás del gateway (sin puerto propio)
+    image: php:8.3-apache
+    restart: unless-stopped
+    volumes: ["./frontend:/var/www/html:ro"]
+    networks: [edge]
+
+  servipag-sandbox:   # SIMULADOR del proveedor externo de pagos (no es parte del backend)
+    <<: *servicio
+    command: ["node", "sandbox/servipag/index.js"]
+    environment:
+      SERVICE_NAME: servipag-sandbox
+      PORT: "8090"
+      WEBHOOK_URL: https://gateway:8443/api/v1/payments/webhooks/servipag
+      SERVIPAG_PUBLIC_URL: http://localhost:8090
+    secrets: [servipag-api-key, servipag-webhook-secret, tls-ca-cert]
+    ports: ["8090:8090"]
+    networks: [proveedores]
+
+  mail-sandbox:   # SIMULADOR del proveedor de correo (bandeja de desarrollo en http://localhost:8025)
+    <<: *servicio
+    command: ["node", "sandbox/mail/index.js"]
+    environment:
+      SERVICE_NAME: mail-sandbox
+      PORT: "8025"
+    secrets: [mail-api-key-clients, mail-api-key-payments]
+    ports: ["8025:8025"]
+    networks: [proveedores]
+
+  seed:   # carta y cuentas del local:  docker compose --profile tools run --rm seed   (+ ficticios: ... seed node scripts/seed.js --demo)
+    build: .
+    image: fukusuke/backend:1.0
+    profiles: [tools]
+    command: ["node", "scripts/seed.js"]
+    environment:
+      DB_HOST: mysql
+    secrets: [db-root, rut-encryption-key, seed-admin-password, seed-despacho-password, seed-dueno-password, seed-cliente-password]
+    networks: [data]
+
+networks:
+  edge: {}                       # gateway y frontend
+  backend: { internal: true }    # microservicios: sin salida ni entrada externa
+  data: { internal: true }       # MySQL: solo servicios con credencial propia
+  proveedores: {}                # salida hacia proveedores externos (pagos y correo)
+
+volumes:
+  mysql-data: {}
+
+secrets:   # se generan con: npm run secrets   (carpeta ./secrets, ignorada por git)
+  analytics-ingest-token: { file: ./secrets/analytics-ingest-token }
+  auth-jwt-private-key: { file: ./secrets/auth-jwt-private-key }
+  clients-auth-token: { file: ./secrets/clients-auth-token }
+  db-analytics: { file: ./secrets/db-analytics }
+  db-auth: { file: ./secrets/db-auth }
+  db-clients: { file: ./secrets/db-clients }
+  db-inventory: { file: ./secrets/db-inventory }
+  db-orders: { file: ./secrets/db-orders }
+  db-payments: { file: ./secrets/db-payments }
+  db-root: { file: ./secrets/db-root }
+  gql-inventory-read: { file: ./secrets/gql-inventory-read }
+  gql-orders-read: { file: ./secrets/gql-orders-read }
+  gql-payments-read: { file: ./secrets/gql-payments-read }
+  gw-analytics-token: { file: ./secrets/gw-analytics-token }
+  gw-auth-token: { file: ./secrets/gw-auth-token }
+  gw-clients-token: { file: ./secrets/gw-clients-token }
+  gw-graphql-token: { file: ./secrets/gw-graphql-token }
+  gw-inventory-token: { file: ./secrets/gw-inventory-token }
+  gw-orders-token: { file: ./secrets/gw-orders-token }
+  gw-payments-token: { file: ./secrets/gw-payments-token }
+  mail-api-key-clients: { file: ./secrets/mail-api-key-clients }
+  mail-api-key-payments: { file: ./secrets/mail-api-key-payments }
+  orders-clients-token: { file: ./secrets/orders-clients-token }
+  orders-inventory-token: { file: ./secrets/orders-inventory-token }
+  payments-clients-token: { file: ./secrets/payments-clients-token }
+  payments-orders-token: { file: ./secrets/payments-orders-token }
+  rut-encryption-key: { file: ./secrets/rut-encryption-key }
+  seed-admin-password: { file: ./secrets/seed-admin-password }
+  seed-cliente-password: { file: ./secrets/seed-cliente-password }
+  seed-despacho-password: { file: ./secrets/seed-despacho-password }
+  seed-dueno-password: { file: ./secrets/seed-dueno-password }
+  servipag-api-key: { file: ./secrets/servipag-api-key }
+  servipag-webhook-secret: { file: ./secrets/servipag-webhook-secret }
+  tls-ca-cert: { file: ./secrets/tls-ca-cert }
+  tls-gateway-cert: { file: ./secrets/tls-gateway-cert }
+  tls-gateway-key: { file: ./secrets/tls-gateway-key }

@@ -1,0 +1,25 @@
+  ✔ preparación: sesiones del personal y del cliente demo
+  ✔ V1 — acceso anónimo a la carta devuelve solo campos públicos
+  ✔ T02 — registro con RUN válido (201), duplicado (409) e inválido (400)
+  ✔ T03 — verificación de correo: enlace válido (200), reutilizado (410) y vencido (410)
+  ✔ V2 — operación protegida sin sesión → 401 en el gateway (no llega a orders)
+  ✔ T04 — el total lo calcula el servidor; precios enviados por el navegador se ignoran
+  ✔ T05 — S07 cambia cantidad y S08 anula con motivo conservando el ítem
+  ✔ V4 — un cliente no puede ver el pedido de otro (404 sin datos)
+  ✔ V6 — pago con datos alterados: monto ignorado, aviso sin firma 401, monto distinto 409
+  ✔ T06 + V8 — pago aprobado en sandbox → PAGADO, boleta y aviso duplicado sin efecto
+  ✔ T08 — boleta y G01: dueño 200; otro cliente NOT_FOUND; DataLoader en una llamada
+  ✔ T07 — depósito: CLIENTE no confirma (403), ADMIN sí (200), operación repetida 422
+  ✔ T09 — cola de despacho en orden de llegada; transición inválida 409; G02 por GraphQL
+  ✔ T10 — reporte de ventas por período (DUENO 200; DESPACHO 403; rango > 366 días 400)
+  ✔ T11 + V3 — ADMIN crea y deshabilita productos; CLIENTE recibe 403 y nada cambia
+  ✔ V5 — acceso directo a un microservicio sin credencial de servicio → 401
+  ✔ V7 — GraphQL: consulta no registrada, campo no autorizado, profundidad e introspección → 400
+  ✔ V9 — CSRF: escritura sin cabecera anti-CSRF → 403
+  ✔ T13 — inventory detenido: crear pedido 503 sin crear nada; G01 responde con error parcial
+  ✔ V10 — fuerza bruta de login: bloqueo temporal tras 5 intentos (429)
+✔ Fukusuke backend — integración y seguridad
+ℹ tests 20
+ℹ pass 20
+ℹ fail 0
+ℹ duration_ms 13473.409964
