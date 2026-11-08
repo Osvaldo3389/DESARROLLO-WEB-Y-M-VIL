@@ -250,6 +250,80 @@ describe("Fukusuke backend — integración y seguridad", { concurrency: false }
     assert.ok(okT11 && okV3);
   });
 
+  it("T14 — mantenedor de clientes (RF10/CU3): buscar, ficha, editar, deshabilitar/habilitar y eliminar datos", async () => {
+    const clienteC = new H.Navegador("CLIENTE C");
+    const email = `qa3.${Date.now()}@example.com`;
+    const run = H.runValido(40000000 + (Date.now() % 9000000));
+    await anon.req("POST", "/api/v1/clients", { body: { run, nombre: "Cliente Mantenedor", email, password: "ClaveSegura2026", telefono: "+56 9 4444 1111",
+      fechaNacimiento: "1990-07-15", sexo: "M", direccion: { calle: "Camino a Rinconada", numero: "100", comuna: "Maipú", provincia: "Santiago", region: "Metropolitana" } } });
+    const token = /verificar=([A-Za-z0-9_-]+)/.exec((await H.correoDe(email)).text)[1];
+    await anon.req("POST", "/api/v1/clients/email-verification", { body: { token } });
+    await clienteC.login(email, "ClaveSegura2026");
+    const lista = await admin.req("GET", `/api/v1/clients?q=${encodeURIComponent(email)}`);
+    const id = lista.body.items[0] && lista.body.items[0].clienteId;
+    const sinDatosDeMas = lista.body.items[0] && !("telefono" in lista.body.items[0]) && /\*/.test(lista.body.items[0].run);
+    const porRun = await admin.req("GET", `/api/v1/clients?q=${encodeURIComponent(run)}`);
+    const ficha = await admin.req("GET", `/api/v1/clients/${id}`);
+    const edit = await admin.req("PUT", `/api/v1/clients/${id}`, { body: { nombre: "Cliente Mantenedor Editado", telefono: "+56 9 4444 2222",
+      direccion: { calle: "Camino a Rinconada", numero: "999", comuna: "Maipú", provincia: "Santiago", region: "Metropolitana" } } });
+    const ficha2 = await admin.req("GET", `/api/v1/clients/${id}`);
+    const off = await admin.req("PATCH", `/api/v1/clients/${id}/estado`, { body: { estado: "INACTIVO" } });
+    const refreshOff = await clienteC.req("POST", "/api/v1/auth/refresh", { body: {} });
+    const loginOff = await new H.Navegador("CLIENTE C (2)").req("POST", "/api/v1/auth/login", { body: { email, password: "ClaveSegura2026" } });
+    const on = await admin.req("PATCH", `/api/v1/clients/${id}/estado`, { body: { estado: "ACTIVO" } });
+    const del = await admin.req("DELETE", `/api/v1/clients/${id}`);
+    const fichaDel = await admin.req("GET", `/api/v1/clients/${id}`);
+    const buscaDel = await admin.req("GET", `/api/v1/clients?q=${encodeURIComponent(email)}`);
+    const loginDel = await new H.Navegador("CLIENTE C (3)").req("POST", "/api/v1/auth/login", { body: { email, password: "ClaveSegura2026" } });
+    const dbp = await H.db();
+    const [[{ dirs }]] = await dbp.query("SELECT COUNT(*) dirs FROM fk_clients.direcciones WHERE cliente_id = ?", [id]);
+    const [[cli]] = await dbp.query("SELECT nombre, eliminado_en FROM fk_clients.clientes WHERE cliente_id = ?", [id]);
+    const ok = lista.status === 200 && lista.body.total === 1 && sinDatosDeMas && porRun.body.total === 1 && ficha.status === 200 && ficha.body.telefono === "+56 9 4444 1111" &&
+      edit.status === 200 && ficha2.body.direccion.numero === "999" && ficha2.body.nombre === "Cliente Mantenedor Editado" &&
+      off.status === 200 && off.body.estado === "INACTIVO" && refreshOff.status === 401 && loginOff.status === 403 && on.body.estado === "ACTIVO" &&
+      del.status === 204 && fichaDel.status === 404 && buscaDel.body.total === 0 && loginDel.status === 401 && dirs === 0 && cli.nombre === "Cliente eliminado" && !!cli.eliminado_en;
+    H.registrar("T14", "Mantenedor de clientes (RF10/CU3, S22–S26)",
+      "buscar por correo/RUN 200 (RUN enmascarado, sin teléfono); ficha 200; editar 200; INACTIVO revoca sesión (401) y bloquea login (403); ACTIVO 200; eliminar 204 → 404, sin direcciones",
+      `${lista.status} (total ${lista.body.total}, por RUN ${porRun.body.total}); ${ficha.status}; ${edit.status}; ${off.body.estado}: refresh ${refreshOff.status}, login ${loginOff.status}; ${on.body.estado}; ` +
+      `${del.status} → ${fichaDel.status}; direcciones ${dirs}; login ${loginDel.status}`, ok);
+    assert.ok(ok);
+  });
+
+  it("T15 — mantenedor de usuarios del personal (RF10/CU2): listar, crear, cambiar rol y deshabilitar", async () => {
+    const lista = await admin.req("GET", "/api/v1/users");
+    const sinHash = lista.status === 200 && lista.body.items.some((u) => u.email === "admin@fukusuke.cl") && !JSON.stringify(lista.body).includes("password");
+    const email = `cocina.${Date.now()}@fukusuke.cl`;
+    const nuevo = await admin.req("POST", "/api/v1/users", { body: { nombre: "Cocina Turno Noche", email, rol: "DESPACHO", password: "ClaveSegura2026" } });
+    const dup = await admin.req("POST", "/api/v1/users", { body: { nombre: "Duplicado", email, rol: "DESPACHO", password: "ClaveSegura2026" } });
+    const malRol = await admin.req("POST", "/api/v1/users", { body: { nombre: "Rol inválido", email: `x.${email}`, rol: "CLIENTE", password: "ClaveSegura2026" } });
+    const cocina = new H.Navegador("DESPACHO nuevo");
+    await cocina.login(email, "ClaveSegura2026");
+    const cola = await cocina.req("GET", "/api/v1/orders/dispatch-queue?first=5");
+    const rol = await admin.req("PATCH", `/api/v1/users/${nuevo.body.cuentaId}`, { body: { rol: "DUENO" } });
+    const refreshTrasRol = await cocina.req("POST", "/api/v1/auth/refresh", { body: {} });
+    const bloq = await admin.req("PATCH", `/api/v1/users/${nuevo.body.cuentaId}`, { body: { estado: "BLOQUEADA" } });
+    const loginBloq = await new H.Navegador("DESPACHO bloqueado").req("POST", "/api/v1/auth/login", { body: { email, password: "ClaveSegura2026" } });
+    const yo = lista.body.items.find((u) => u.email === "admin@fukusuke.cl");
+    const propio = await admin.req("PATCH", `/api/v1/users/${yo.cuentaId}`, { body: { estado: "BLOQUEADA" } });
+    const ok = sinHash && nuevo.status === 201 && nuevo.body.rol === "DESPACHO" && dup.status === 409 && malRol.status === 400 && cola.status === 200 &&
+      rol.status === 200 && rol.body.rol === "DUENO" && refreshTrasRol.status === 401 && bloq.body.estado === "BLOQUEADA" && loginBloq.status === 403 && propio.status === 409;
+    H.registrar("T15", "Mantenedor de usuarios del personal (RF10/CU2, S27–S29)",
+      "listar 200 sin hashes; crear 201 (correo repetido 409, rol CLIENTE 400); el nuevo DESPACHO entra a la cola; cambio de rol revoca sesión; BLOQUEADA impide login (403); ADMIN no se deshabilita a sí mismo (409)",
+      `${lista.status}; ${nuevo.status} (${dup.status}, ${malRol.status}); cola ${cola.status}; rol ${rol.body.rol}, refresh ${refreshTrasRol.status}; ${bloq.body.estado}, login ${loginBloq.status}; propio ${propio.status}`, ok);
+    assert.ok(ok);
+  });
+
+  it("V11 — mantenedores restringidos: CLIENTE y DESPACHO no administran clientes ni usuarios", async () => {
+    const r1 = await clienteA.req("GET", "/api/v1/clients");
+    const r2 = await clienteA.req("DELETE", `/api/v1/clients/${crypto.randomUUID()}`);
+    const r3 = await despacho.req("POST", "/api/v1/users", { body: { nombre: "Intruso", email: "intruso@example.com", rol: "ADMIN", password: "ClaveSegura2026" } });
+    const r4 = await anon.req("GET", "/api/v1/users");
+    const ok = r1.status === 403 && r2.status === 403 && r3.status === 403 && r4.status === 401;
+    H.registrar("V11", "Mantenedores desde roles sin permiso", "CLIENTE listar/eliminar clientes 403; DESPACHO crear usuario 403; anónimo 401",
+      `${r1.status} / ${r2.status} / ${r3.status} / ${r4.status}`, ok);
+    assert.ok(ok);
+  });
+
   it("V5 — acceso directo a un microservicio sin credencial de servicio → 401", async () => {
     const id = estado.pedidoA.pedidoId;
     const directo = await fetch(`http://127.0.0.1:8082/orders/${id}`);

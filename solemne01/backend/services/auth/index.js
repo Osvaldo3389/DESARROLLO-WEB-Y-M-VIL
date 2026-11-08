@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const { createApp, finish, listen, h } = require("../../shared/service");
 const { createSecretProvider } = require("../../shared/secrets");
 const { createPool, tx } = require("../../shared/db");
-const { serviceAuth, allowCallers, ISSUER, AUDIENCE } = require("../../shared/auth");
+const { serviceAuth, allowCallers, userContext, requireUser, ISSUER, AUDIENCE } = require("../../shared/auth");
 const { E } = require("../../shared/errors");
 const { isEmail, isStr, isUUID, assertObject } = require("../../shared/validate");
 const { sha256, tokenAleatorio } = require("../../shared/cifrado");
@@ -35,7 +35,10 @@ async function main() {
   // JWKS pública (solo clave pública; la privada nunca sale del servicio)
   app.get("/.well-known/jwks.json", (req, res) => res.json({ keys: [{ ...publicJwk, kid, alg: "RS256", use: "sig" }] }));
 
-  app.use(serviceAuth(tokens));
+  // Auth re-verifica el JWT del usuario con su propia clave pública (mismo control que los demás servicios con la JWKS)
+  const publicKey = crypto.createPublicKey(privateKey);
+  const jwksLocal = { getKey: async (k) => { if (k !== kid) throw E.unauthorized("Token con clave desconocida"); return publicKey; } };
+  app.use(serviceAuth(tokens), userContext(jwksLocal));
 
   const cookie = (name, value, maxAge, pathAttr) =>
     `${name}=${value}; Path=${pathAttr}; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`;
@@ -149,6 +152,105 @@ async function main() {
     const nuevoHash = !c.password_hash ? await bcrypt.hash(password, BCRYPT_COSTO) : c.password_hash;
     await pool.query("UPDATE cuentas SET email_verificado = 1, estado = 'ACTIVA', password_hash = ? WHERE cuenta_id = ?", [nuevoHash, c.cuenta_id]);
     res.json({ estado: "ACTIVO" });
+  }));
+
+  // ---- CU2 Mantenedor de usuarios del personal (S26–S28, solo ADMIN) ----
+  const ROLES_PERSONAL = ["ADMIN", "DESPACHO", "DUENO"];
+  const usuarioDTO = (c) => ({ cuentaId: c.cuenta_id, nombre: c.nombre, email: c.email, rol: c.rol, estado: c.estado, creadoEn: c.creado_en });
+  const revocarSesiones = (conn, cuentaId) => conn.query("UPDATE refresh_tokens SET revocado = 1 WHERE cuenta_id = ? AND revocado = 0", [cuentaId]);
+
+  // S26 — listar usuarios del personal (nunca devuelve hashes)
+  app.get("/users", allowCallers("gateway"), requireUser("ADMIN"), h(async (req, res) => {
+    const [rows] = await pool.query("SELECT cuenta_id, nombre, email, rol, estado, creado_en FROM cuentas WHERE rol IN ('ADMIN','DESPACHO','DUENO') ORDER BY rol, nombre");
+    res.json({ items: rows.map(usuarioDTO) });
+  }));
+
+  // S27 — crear usuario del personal con contraseña inicial definida por el administrador (hash bcrypt; no se devuelve)
+  app.post("/users", allowCallers("gateway"), requireUser("ADMIN"), h(async (req, res) => {
+    assertObject(req.body);
+    const { nombre, email, rol, password } = req.body;
+    const err = [];
+    if (!isStr(nombre, 2, 120)) err.push("nombre");
+    if (!isEmail(email)) err.push("email");
+    if (!ROLES_PERSONAL.includes(rol)) err.push("rol");
+    if (!isStr(password, 10, 200)) err.push("password");
+    if (err.length) throw E.badRequest("Datos de usuario inválidos", { campos: err });
+    const cuentaId = crypto.randomUUID();
+    try {
+      await pool.query("INSERT INTO cuentas (cuenta_id, email, nombre, password_hash, rol, email_verificado, estado) VALUES (?,?,?,?,?,1,'ACTIVA')",
+        [cuentaId, email.toLowerCase(), nombre.trim(), await bcrypt.hash(password, BCRYPT_COSTO), rol]);
+    } catch (e) {
+      if (e.code === "ER_DUP_ENTRY") throw E.conflict("Ya existe una cuenta con ese correo");
+      throw e;
+    }
+    const [[c]] = await pool.query("SELECT * FROM cuentas WHERE cuenta_id = ?", [cuentaId]);
+    res.status(201).json(usuarioDTO(c));
+  }));
+
+  // S28 — cambiar rol o habilitar/deshabilitar; deshabilitar revoca todas las sesiones de esa cuenta
+  app.patch("/users/:id", allowCallers("gateway"), requireUser("ADMIN"), h(async (req, res) => {
+    if (!isUUID(req.params.id)) throw E.badRequest("id inválido");
+    assertObject(req.body);
+    const { rol, estado } = req.body;
+    if (rol === undefined && estado === undefined) throw E.badRequest("Indica rol o estado");
+    if (rol !== undefined && !ROLES_PERSONAL.includes(rol)) throw E.badRequest("Rol inválido");
+    if (estado !== undefined && !["ACTIVA", "BLOQUEADA"].includes(estado)) throw E.badRequest("Estado inválido");
+    if (req.params.id === req.user.sub) throw E.conflict("No puedes cambiar el rol ni deshabilitar tu propia cuenta");
+    const out = await tx(pool, async (conn) => {
+      const [[c]] = await conn.query("SELECT * FROM cuentas WHERE cuenta_id = ? AND rol IN ('ADMIN','DESPACHO','DUENO') FOR UPDATE", [req.params.id]);
+      if (!c) throw E.notFound("Usuario no encontrado");
+      const nuevoRol = rol || c.rol;
+      const nuevoEstado = estado || c.estado;
+      if (c.rol === "ADMIN" && (nuevoRol !== "ADMIN" || nuevoEstado !== "ACTIVA")) {
+        const [[{ n }]] = await conn.query("SELECT COUNT(*) AS n FROM cuentas WHERE rol = 'ADMIN' AND estado = 'ACTIVA' AND cuenta_id <> ?", [c.cuenta_id]);
+        if (n === 0) throw E.conflict("Debe quedar al menos un administrador activo");
+      }
+      await conn.query("UPDATE cuentas SET rol = ?, estado = ? WHERE cuenta_id = ?", [nuevoRol, nuevoEstado, c.cuenta_id]);
+      if (nuevoEstado !== "ACTIVA" || nuevoRol !== c.rol) await revocarSesiones(conn, c.cuenta_id);
+      return { ...c, rol: nuevoRol, estado: nuevoEstado };
+    });
+    res.json(usuarioDTO(out));
+  }));
+
+  // ---- Contratos internos para CU3 (solo clients) ----
+  // Estado de varias cuentas de cliente (para el listado del mantenedor)
+  app.get("/internal/accounts", allowCallers("clients"), h(async (req, res) => {
+    const ids = String(req.query.ids || "").split(",").filter(Boolean);
+    if (!ids.length || ids.length > 100 || !ids.every(isUUID)) throw E.badRequest("ids inválidos");
+    const [rows] = await pool.query("SELECT cuenta_id, estado, email_verificado FROM cuentas WHERE rol = 'CLIENTE' AND cuenta_id IN (?)", [ids]);
+    res.json(rows.map((r) => ({ cuentaId: r.cuenta_id, estado: r.estado, emailVerificado: !!r.email_verificado })));
+  }));
+
+  // Habilitar/deshabilitar o renombrar una cuenta de cliente; deshabilitar revoca sus sesiones
+  app.patch("/internal/accounts/:id", allowCallers("clients"), h(async (req, res) => {
+    if (!isUUID(req.params.id)) throw E.badRequest();
+    assertObject(req.body);
+    const { estado, nombre } = req.body;
+    if (estado !== undefined && !["ACTIVA", "BLOQUEADA"].includes(estado)) throw E.badRequest("Estado inválido");
+    if (nombre !== undefined && !isStr(nombre, 2, 120)) throw E.badRequest("Nombre inválido");
+    const out = await tx(pool, async (conn) => {
+      const [[c]] = await conn.query("SELECT * FROM cuentas WHERE cuenta_id = ? AND rol = 'CLIENTE' FOR UPDATE", [req.params.id]);
+      if (!c) throw E.notFound();
+      // reactivar una cuenta que nunca confirmó su correo la deja PENDIENTE (RF11 se mantiene)
+      const nuevoEstado = estado === undefined ? c.estado : estado === "ACTIVA" && !c.email_verificado ? "PENDIENTE" : estado;
+      await conn.query("UPDATE cuentas SET estado = ?, nombre = ? WHERE cuenta_id = ?", [nuevoEstado, nombre ? nombre.trim() : c.nombre, c.cuenta_id]);
+      if (nuevoEstado !== "ACTIVA") await revocarSesiones(conn, c.cuenta_id);
+      return nuevoEstado;
+    });
+    res.json({ cuentaId: req.params.id, estado: out });
+  }));
+
+  // Anonimizar la cuenta de un cliente que pidió eliminar sus datos (S25): sin correo real, sin contraseña, sin sesiones
+  app.post("/internal/accounts/:id/anonimizar", allowCallers("clients"), h(async (req, res) => {
+    if (!isUUID(req.params.id)) throw E.badRequest();
+    await tx(pool, async (conn) => {
+      const [[c]] = await conn.query("SELECT cuenta_id FROM cuentas WHERE cuenta_id = ? AND rol = 'CLIENTE' FOR UPDATE", [req.params.id]);
+      if (!c) throw E.notFound();
+      await conn.query("UPDATE cuentas SET email = ?, nombre = 'Cliente eliminado', password_hash = NULL, estado = 'BLOQUEADA' WHERE cuenta_id = ?",
+        [`eliminado-${c.cuenta_id}@fukusuke.invalid`, c.cuenta_id]);
+      await revocarSesiones(conn, c.cuenta_id);
+    });
+    res.status(204).end();
   }));
 
   finish(app);

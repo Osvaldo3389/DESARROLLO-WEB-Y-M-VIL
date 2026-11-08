@@ -26,10 +26,17 @@ async function main() {
       await root.query(`ALTER USER 'fk_${s}'@'${h}' IDENTIFIED BY ?`, [pw]);
       await root.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON fk_${s}.* TO 'fk_${s}'@'${h}'`);
     }
+    // Migraciones versionadas: cada V<n>__*.sql se aplica una sola vez y queda registrada en _migraciones
+    await root.query(`CREATE TABLE IF NOT EXISTS fk_${s}._migraciones (archivo VARCHAR(120) NOT NULL PRIMARY KEY, aplicado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+    const [hechas] = await root.query(`SELECT archivo FROM fk_${s}._migraciones`);
+    const aplicadas = new Set(hechas.map((x) => x.archivo));
     const dir = path.join(__dirname, "..", "db", s);
-    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".sql")).sort()) {
+    const version = (f) => Number((/^V(\d+)__/.exec(f) || [0, 0])[1]);
+    for (const f of fs.readdirSync(dir).filter((x) => /^V\d+__.*\.sql$/.test(x)).sort((a, b) => version(a) - version(b))) {
+      if (aplicadas.has(f)) continue;
       await root.query(`USE fk_${s}`);
       await root.query(fs.readFileSync(path.join(dir, f), "utf8"));
+      await root.query(`INSERT INTO fk_${s}._migraciones (archivo) VALUES (?)`, [f]);
       console.log(`fk_${s}: ${f} aplicado`);
     }
   }

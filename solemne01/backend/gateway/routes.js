@@ -1,4 +1,4 @@
-// Lista EXPLÍCITA de rutas (R01–R23). Lo que no está aquí no se publica.
+// Lista EXPLÍCITA de rutas (R01–R31). Lo que no está aquí no se publica.
 // access: anon | jwt | optional (anónimo o JWT) | session (cookie de refresh) | webhook
 const R = (id, method, path, target, targetPath, access, opts = {}) => ({ id, method, path, target, targetPath, access, ...opts });
 const IP = "ip";
@@ -29,4 +29,14 @@ module.exports = [
   R("R21", "POST", "/api/v1/graphql", "graphql", "/graphql", "jwt", { roles: ["CLIENTE", "DESPACHO", "ADMIN"], csrf: true, timeoutMs: 3500 }),
   R("R22", "GET", "/api/v1/clients/me", "clients", "/clients/me", "jwt", { roles: ["CLIENTE"] }),
   R("R23", "GET", "/api/v1/payments/pendientes", "payments", "/payments/pendientes", "jwt", { roles: ["ADMIN"] }),
+  // CU3 — mantenedor de clientes (ADMIN)
+  R("R24", "GET", "/api/v1/clients", "clients", "/clients", "jwt", { roles: ["ADMIN"], rate: [60, 60, USER] }),
+  R("R25", "GET", "/api/v1/clients/:id", "clients", "/clients/:id", "jwt", { roles: ["ADMIN"] }),
+  R("R26", "PUT", "/api/v1/clients/:id", "clients", "/clients/:id", "jwt", { roles: ["ADMIN"], csrf: true }),
+  R("R27", "PATCH", "/api/v1/clients/:id/estado", "clients", "/clients/:id/estado", "jwt", { roles: ["ADMIN"], csrf: true }),
+  R("R28", "DELETE", "/api/v1/clients/:id", "clients", "/clients/:id", "jwt", { roles: ["ADMIN"], csrf: true }),
+  // CU2 — mantenedor de usuarios del personal (ADMIN)
+  R("R29", "GET", "/api/v1/users", "auth", "/users", "jwt", { roles: ["ADMIN"] }),
+  R("R30", "POST", "/api/v1/users", "auth", "/users", "jwt", { roles: ["ADMIN"], csrf: true }),
+  R("R31", "PATCH", "/api/v1/users/:id", "auth", "/users/:id", "jwt", { roles: ["ADMIN"], csrf: true }),
 ];

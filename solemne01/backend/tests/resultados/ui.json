@@ -8,7 +8,7 @@
     {
       "paso": "Registro S03 desde registro.php",
       "ok": true,
-      "detalle": "ui.1794004600@example.com"
+      "detalle": "ui.1794102925@example.com"
     },
     {
       "paso": "Verificación de correo S04 (RF11)",
@@ -28,15 +28,20 @@
     {
       "paso": "Pago Servipag sandbox → boleta (G01 + S13)",
       "ok": true,
-      "detalle": "N° B-000010"
+      "detalle": "N° B-000004"
     },
     {
       "paso": "Panel de despacho P10 (G02)",
       "ok": true,
-      "detalle": "10 pedidos en cola"
+      "detalle": "4 pedidos en cola"
     },
     {
       "paso": "Panel de administración P11 (S01 todos, S21, S19)",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "paso": "Mantenedores de clientes (CU3: S22–S24) y usuarios (CU2: S27) en P11",
       "ok": true,
       "detalle": ""
     },
@@ -60,7 +65,7 @@
     },
     {
       "metodo": "GET",
-      "url": "/api/v1/payments/2e624d7d-19be-4704-9529-a263fd682cf4/boleta",
+      "url": "/api/v1/payments/fbc931ef-c7ae-496a-8c95-a182513d0fed/boleta",
       "status": 200
     }
   ]

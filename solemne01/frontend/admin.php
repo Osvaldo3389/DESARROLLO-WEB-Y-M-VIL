@@ -38,13 +38,15 @@
         <div class="container">
             <div class="seccion-titulo">
                 <h2>Panel de administración</h2>
-                <p>Mantenedores, depósitos, registro presencial, pedidos y reporte de ventas.</p>
+                <p>Mantenedores de productos, clientes y usuarios; depósitos, registro presencial, pedidos y reporte de ventas.</p>
             </div>
             <div id="aviso-admin" class="alerta-radio mb-3 d-none"></div>
             <ul class="nav nav-pills mb-4 flex-wrap" role="tablist">
                 <li class="nav-item solo-admin"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-productos" type="button">Productos</button></li>
                 <li class="nav-item solo-admin"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-depositos" type="button">Depósitos</button></li>
+                <li class="nav-item solo-admin"><button class="nav-link" id="btn-tab-clientes" data-bs-toggle="pill" data-bs-target="#tab-clientes" type="button">Clientes</button></li>
                 <li class="nav-item solo-admin"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-presencial" type="button">Registro presencial</button></li>
+                <li class="nav-item solo-admin"><button class="nav-link" id="btn-tab-usuarios" data-bs-toggle="pill" data-bs-target="#tab-usuarios" type="button">Usuarios</button></li>
                 <li class="nav-item solo-admin"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-pedidos" type="button">Pedidos</button></li>
                 <li class="nav-item"><button class="nav-link" id="btn-tab-reporte" data-bs-toggle="pill" data-bs-target="#tab-reporte" type="button">Reporte de ventas</button></li>
             </ul>
@@ -76,6 +78,61 @@
                     <div class="table-responsive"><table class="table table-sm align-middle panel-tabla">
                         <thead><tr><th>Referencia</th><th>Monto</th><th>Fecha</th><th>N° operación (cartola)</th><th>Fecha depósito</th><th></th></tr></thead>
                         <tbody id="tabla-depositos"></tbody></table></div>
+                </div>
+                <div class="tab-pane fade" id="tab-clientes">
+                    <form class="d-flex gap-2 mb-3" style="max-width:640px" onsubmit="return buscarClientes(event)">
+                        <input class="form-control" id="bc-q" placeholder="Buscar por nombre, correo o RUN">
+                        <button class="btn-principal" style="color:#fff;">Buscar</button>
+                    </form>
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="table-responsive"><table class="table table-sm align-middle panel-tabla">
+                                <thead><tr><th>Cliente</th><th>RUN</th><th>Comuna</th><th>Estado</th><th></th></tr></thead>
+                                <tbody id="tabla-clientes"></tbody></table></div>
+                            <div class="d-flex gap-2 align-items-center small">
+                                <button class="btn btn-sm btn-outline-dark" onclick="paginaClientes(-1)">Anterior</button>
+                                <span id="pag-clientes"></span>
+                                <button class="btn btn-sm btn-outline-dark" onclick="paginaClientes(1)">Siguiente</button>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="tarjeta-formulario d-none" id="editar-cliente">
+                                <h5>Editar cliente</h5>
+                                <p class="small text-muted mb-2" id="ec-identidad"></p>
+                                <form onsubmit="return guardarCliente(event)">
+                                    <input class="form-control mb-2" id="ec-nombre" placeholder="Nombre" required>
+                                    <input class="form-control mb-2" id="ec-telefono" placeholder="Teléfono" required>
+                                    <input class="form-control mb-2" id="ec-calle" placeholder="Calle" required>
+                                    <input class="form-control mb-2" id="ec-numero" placeholder="Número" required>
+                                    <input class="form-control mb-2" id="ec-comuna" placeholder="Comuna" required>
+                                    <input class="form-control mb-2" id="ec-provincia" placeholder="Provincia" required>
+                                    <input class="form-control mb-2" id="ec-region" placeholder="Región" required>
+                                    <button class="btn-principal w-100" style="color:#fff;">Guardar cambios</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="tab-usuarios">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="table-responsive"><table class="table table-sm align-middle panel-tabla">
+                                <thead><tr><th>Usuario</th><th>Rol</th><th>Habilitado</th></tr></thead>
+                                <tbody id="tabla-usuarios"></tbody></table></div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="tarjeta-formulario">
+                                <h5>Nuevo usuario del personal</h5>
+                                <form onsubmit="return crearUsuario(event)">
+                                    <input class="form-control mb-2" id="nu-nombre" placeholder="Nombre" required>
+                                    <input class="form-control mb-2" id="nu-email" type="email" placeholder="Correo" required>
+                                    <select class="form-select mb-2" id="nu-rol"><option value="DESPACHO">Despacho / cocina</option><option value="ADMIN">Administración</option><option value="DUENO">Dueño</option></select>
+                                    <input class="form-control mb-2" id="nu-password" type="password" minlength="10" placeholder="Contraseña inicial (mín. 10)" autocomplete="new-password" required>
+                                    <button class="btn-principal w-100" style="color:#fff;">Crear usuario</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="tab-pane fade" id="tab-presencial">
                     <div class="tarjeta-formulario" style="max-width:640px">
@@ -191,6 +248,100 @@
             } catch (e) { mostrarAviso(e.message, true); }
         }
 
+        // ---- Mantenedor de clientes (CU3: S22 buscar, S23 ficha, S24 editar, S25 habilitar/deshabilitar, S26 eliminar datos) ----
+        const ESTADOS_CLIENTE = { ACTIVO: "Activo", INACTIVO: "Deshabilitado", PENDIENTE_VERIFICACION: "Sin verificar", DESCONOCIDO: "—" };
+        let paginaCli = 1, totalCli = 0, editandoId = null;
+        async function cargarClientes() {
+            const q = document.getElementById("bc-q").value.trim();
+            const r = await Api.pedir("GET", `/clients?q=${encodeURIComponent(q)}&page=${paginaCli}&size=10`);
+            totalCli = r.total;
+            document.getElementById("pag-clientes").textContent = `Página ${r.page} · ${r.total} cliente(s)`;
+            document.getElementById("tabla-clientes").innerHTML = r.items.length ? r.items.map(c => `<tr>
+                <td>${escapar(c.nombre)}<div class="small text-muted">${escapar(c.email)}</div></td><td>${escapar(c.run)}</td><td>${escapar(c.comuna || "")}</td>
+                <td>${ESTADOS_CLIENTE[c.estado] || escapar(c.estado)}</td>
+                <td class="text-nowrap"><button class="btn btn-sm btn-outline-dark" onclick="editarCliente('${c.clienteId}')">Editar</button>
+                    ${c.estado === "INACTIVO" ? `<button class="btn btn-sm btn-outline-dark" onclick="estadoCliente('${c.clienteId}', 'ACTIVO')">Habilitar</button>`
+                        : `<button class="btn btn-sm btn-outline-dark" onclick="estadoCliente('${c.clienteId}', 'INACTIVO')">Deshabilitar</button>`}
+                    <button class="btn-anular" onclick="eliminarCliente('${c.clienteId}')">Eliminar datos</button></td></tr>`).join("")
+                : '<tr><td colspan="5" class="text-muted">Sin resultados.</td></tr>';
+        }
+        function buscarClientes(e) { if (e) e.preventDefault(); paginaCli = 1; cargarClientes().catch(err => mostrarAviso(err.message, true)); return false; }
+        function paginaClientes(d) {
+            const max = Math.max(1, Math.ceil(totalCli / 10));
+            paginaCli = Math.min(max, Math.max(1, paginaCli + d));
+            cargarClientes().catch(err => mostrarAviso(err.message, true));
+        }
+        async function editarCliente(id) {
+            try {
+                const c = await Api.pedir("GET", "/clients/" + id);
+                editandoId = id;
+                document.getElementById("editar-cliente").classList.remove("d-none");
+                document.getElementById("ec-identidad").textContent = `${c.email} · RUN ${c.run}`;
+                const set = (k, v) => { document.getElementById(k).value = v || ""; };
+                set("ec-nombre", c.nombre); set("ec-telefono", c.telefono);
+                const d = c.direccion || {};
+                set("ec-calle", d.calle); set("ec-numero", d.numero); set("ec-comuna", d.comuna); set("ec-provincia", d.provincia); set("ec-region", d.region);
+            } catch (e) { mostrarAviso(e.message, true); }
+        }
+        async function guardarCliente(e) {
+            e.preventDefault();
+            const v = (id) => document.getElementById(id).value.trim();
+            try {
+                await Api.pedir("PUT", "/clients/" + editandoId, { nombre: v("ec-nombre"), telefono: v("ec-telefono"),
+                    direccion: { calle: v("ec-calle"), numero: v("ec-numero"), comuna: v("ec-comuna"), provincia: v("ec-provincia"), region: v("ec-region") } });
+                mostrarAviso("Datos del cliente actualizados.");
+                document.getElementById("editar-cliente").classList.add("d-none");
+                cargarClientes();
+            } catch (err) { mostrarAviso(err.message, true); }
+            return false;
+        }
+        async function estadoCliente(id, estado) {
+            try {
+                const r = await Api.pedir("PATCH", `/clients/${id}/estado`, { estado });
+                mostrarAviso(r.estado === "INACTIVO" ? "Cliente deshabilitado: ya no puede ingresar y sus sesiones se cerraron." : "Cliente habilitado.");
+                cargarClientes();
+            } catch (e) { mostrarAviso(e.message, true); }
+        }
+        async function eliminarCliente(id) {
+            if (!confirm("¿Eliminar los datos personales de este cliente? Se borran RUN, teléfono, nacimiento, sexo y direcciones; sus pedidos y boletas se conservan sin esos datos. No se puede deshacer.")) return;
+            try {
+                await Api.pedir("DELETE", "/clients/" + id);
+                mostrarAviso("Datos personales del cliente eliminados.");
+                document.getElementById("editar-cliente").classList.add("d-none");
+                cargarClientes();
+            } catch (e) { mostrarAviso(e.message, true); }
+        }
+
+        // ---- Mantenedor de usuarios del personal (CU2: S27 listar, S28 crear, S29 rol/estado) ----
+        const ROLES = { ADMIN: "Administración", DESPACHO: "Despacho / cocina", DUENO: "Dueño" };
+        async function cargarUsuarios() {
+            const r = await Api.pedir("GET", "/users");
+            document.getElementById("tabla-usuarios").innerHTML = r.items.map(u => `<tr>
+                <td>${escapar(u.nombre)}<div class="small text-muted">${escapar(u.email)}</div></td>
+                <td><select class="form-select form-select-sm" onchange="modificarUsuario('${u.cuentaId}', { rol: this.value })">
+                    ${Object.keys(ROLES).map(k => `<option value="${k}" ${k === u.rol ? "selected" : ""}>${ROLES[k]}</option>`).join("")}</select></td>
+                <td><div class="form-check form-switch"><input class="form-check-input" type="checkbox" ${u.estado === "ACTIVA" ? "checked" : ""}
+                    onchange="modificarUsuario('${u.cuentaId}', { estado: this.checked ? 'ACTIVA' : 'BLOQUEADA' })"></div></td></tr>`).join("");
+        }
+        async function modificarUsuario(id, cambio) {
+            try {
+                await Api.pedir("PATCH", "/users/" + id, cambio);
+                mostrarAviso(cambio.estado === "BLOQUEADA" ? "Usuario deshabilitado: sus sesiones se cerraron." : "Usuario actualizado.");
+            } catch (e) { mostrarAviso(e.message, true); }
+            cargarUsuarios();
+        }
+        async function crearUsuario(e) {
+            e.preventDefault();
+            const v = (id) => document.getElementById(id).value.trim();
+            try {
+                const u = await Api.pedir("POST", "/users", { nombre: v("nu-nombre"), email: v("nu-email"), rol: v("nu-rol"), password: document.getElementById("nu-password").value });
+                mostrarAviso(`Usuario ${u.email} creado con rol ${ROLES[u.rol]}. Entrégale la contraseña inicial en persona.`);
+                e.target.reset();
+                cargarUsuarios();
+            } catch (err) { mostrarAviso(err.message, true); }
+            return false;
+        }
+
         // ---- Registro presencial (S03 como ADMIN) ----
         async function registrarPresencial(e) {
             e.preventDefault();
@@ -264,6 +415,8 @@
         } else {
             cargarProductos().catch(e => mostrarAviso(e.message, true));
             cargarDepositos().catch(() => {});
+            cargarClientes().catch(() => {});
+            cargarUsuarios().catch(() => {});
             cargarReporte();
             if (location.hash === "#reporte") document.getElementById("btn-tab-reporte").click();
         }

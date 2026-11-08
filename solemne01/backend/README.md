@@ -82,7 +82,7 @@ npm start            # página + API en https://localhost:8443  (Ctrl+C para det
 
 * En tu PC todos los servicios escuchan solo en `127.0.0.1`; en Docker los microservicios están en la red `backend` (`internal: true`), MySQL en `data` y solo el gateway publica un puerto.
 * Cada servicio tiene **su esquema y su usuario de MySQL** (solo SELECT/INSERT/UPDATE/DELETE sobre su esquema) y recibe **solo los secretos que necesita**. La cuenta root solo la usa `npm run setup`.
-* Rutas públicas: lista explícita R01–R23 en `gateway/routes.js` (todo lo demás responde 404/405).
+* Rutas públicas: lista explícita R01–R31 en `gateway/routes.js` (todo lo demás responde 404/405).
 * Compatible con **MySQL 8** y **MariaDB 10.4+** (la de XAMPP).
 
 ## Puesta en marcha con Docker (opcional)
@@ -106,7 +106,7 @@ Las pruebas automáticas usan **datos ficticios de prueba** (lo que pide la paut
 ```bash
 npm run seed:demo    # carga los datos ficticios de prueba (una vez)
 npm run start:bg     # levanta todo en segundo plano
-npm test             # integración + seguridad (T01–T13, V1–V10) → tests/resultados/resultados.json
+npm test             # integración + seguridad (T01–T15, V1–V11) → tests/resultados/resultados.json
 npm stop
 ```
 

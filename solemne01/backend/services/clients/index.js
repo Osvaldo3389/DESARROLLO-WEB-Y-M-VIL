@@ -145,6 +145,112 @@ async function main() {
     });
   }));
 
+  // ---- CU3 Mantenedor de clientes (S22–S26, solo ADMIN) ----
+  const ESTADO_CLIENTE = { ACTIVA: "ACTIVO", BLOQUEADA: "INACTIVO", PENDIENTE: "PENDIENTE_VERIFICACION" };
+  async function estadosDeCuentas(ids, correlationId) {
+    const m = new Map();
+    if (!ids.length) return m;
+    try {
+      const r = await callService(`${AUTH}/internal/accounts?ids=${ids.join(",")}`, { token: clientsAuthToken, correlationId, timeoutMs: 2000 });
+      if (r.status === 200) r.body.forEach((a) => m.set(a.cuentaId, ESTADO_CLIENTE[a.estado] || a.estado));
+    } catch { /* Auth no responde: el listado se entrega con estado DESCONOCIDO */ }
+    return m;
+  }
+  const direccionPrincipal = async (conn, clienteId) =>
+    (await conn.query("SELECT * FROM direcciones WHERE cliente_id = ? ORDER BY creado_en LIMIT 1", [clienteId]))[0][0];
+  async function clienteVigente(conn, id, bloquear = false) {
+    const [[c]] = await conn.query(`SELECT * FROM clientes WHERE cliente_id = ? AND eliminado_en IS NULL${bloquear ? " FOR UPDATE" : ""}`, [id]);
+    if (!c) throw E.notFound("Cliente no encontrado");
+    return c;
+  }
+
+  // S22 — listar y buscar clientes (por nombre, correo o RUN exacto). Sin teléfono, nacimiento ni sexo; RUN enmascarado.
+  app.get("/clients", allowCallers("gateway"), requireUser("ADMIN"), h(async (req, res) => {
+    const q = String(req.query.q || "").trim();
+    const page = req.query.page === undefined ? 1 : Number(req.query.page);
+    const size = req.query.size === undefined ? 20 : Number(req.query.size);
+    if (q.length > 60 || !Number.isInteger(page) || page < 1 || !Number.isInteger(size) || size < 1 || size > 50) throw E.badRequest("Filtros o paginación inválidos");
+    let where = "c.eliminado_en IS NULL";
+    const params = [];
+    if (q && V.runValido(q)) { where += " AND c.run_hash = ?"; params.push(cif.hash(V.normalizarRun(q))); }
+    else if (q) { const like = `%${q.replace(/[\\%_]/g, (x) => "\\" + x)}%`; where += " AND (c.nombre LIKE ? OR c.email LIKE ?)"; params.push(like, like.toLowerCase()); }
+    const [[{ total }]] = await pool.query(`SELECT COUNT(*) AS total FROM clientes c WHERE ${where}`, params);
+    const [rows] = await pool.query(`SELECT c.*, (SELECT d.comuna FROM direcciones d WHERE d.cliente_id = c.cliente_id ORDER BY d.creado_en LIMIT 1) AS comuna
+      FROM clientes c WHERE ${where} ORDER BY c.creado_en DESC, c.nombre LIMIT ? OFFSET ?`, [...params, size, (page - 1) * size]);
+    const estados = await estadosDeCuentas(rows.map((c) => c.cuenta_id), req.correlationId);
+    res.json({
+      items: rows.map((c) => ({ clienteId: c.cliente_id, nombre: c.nombre, email: c.email, run: V.enmascararRun(cif.descifrar(c.run_cifrado)),
+        comuna: c.comuna, estado: estados.get(c.cuenta_id) || "DESCONOCIDO", creadoEn: c.creado_en })),
+      page, size, total,
+    });
+  }));
+
+  // S23 — ficha editable de un cliente (ADMIN): incluye teléfono y dirección principal para el formulario del mantenedor
+  app.get("/clients/:id", allowCallers("gateway"), requireUser("ADMIN"), h(async (req, res) => {
+    const id = V.requireUUID(req.params.id, "clienteId");
+    const c = await clienteVigente(pool, id);
+    const d = await direccionPrincipal(pool, id);
+    const estados = await estadosDeCuentas([c.cuenta_id], req.correlationId);
+    res.json({ clienteId: c.cliente_id, nombre: c.nombre, email: c.email, run: V.enmascararRun(cif.descifrar(c.run_cifrado)),
+      telefono: cif.descifrar(c.telefono_cifrado), estado: estados.get(c.cuenta_id) || "DESCONOCIDO",
+      direccion: d ? { calle: cif.descifrar(d.calle_cifrada), numero: cif.descifrar(d.numero_cifrado), comuna: d.comuna, provincia: d.provincia, region: d.region } : null });
+  }));
+
+  // S24 — reemplazar los datos editables (nombre, teléfono y dirección principal). RUN y correo identifican al cliente y no se cambian aquí.
+  app.put("/clients/:id", allowCallers("gateway"), requireUser("ADMIN"), h(async (req, res) => {
+    const id = V.requireUUID(req.params.id, "clienteId");
+    const b = req.body;
+    V.assertObject(b);
+    const d = b.direccion || {};
+    const err = [];
+    if (!V.isStr(b.nombre, 2, 120)) err.push("nombre");
+    if (!V.isStr(b.telefono, 8, 20) || !/^\+?[\d\s]{8,20}$/.test(b.telefono)) err.push("telefono");
+    if (!V.isStr(d.calle, 2, 120) || !V.isStr(String(d.numero || ""), 1, 20) || !V.isStr(d.comuna, 2, 60) || !V.isStr(d.provincia, 2, 60) || !V.isStr(d.region, 2, 60)) err.push("direccion");
+    if (err.length) throw E.badRequest("Datos inválidos", { campos: err });
+    await tx(pool, async (conn) => {
+      const c = await clienteVigente(conn, id, true);
+      await conn.query("UPDATE clientes SET nombre = ?, telefono_cifrado = ? WHERE cliente_id = ?", [b.nombre.trim(), cif.cifrar(b.telefono.trim()), c.cliente_id]);
+      const dp = await direccionPrincipal(conn, c.cliente_id);
+      if (dp) await conn.query("UPDATE direcciones SET calle_cifrada = ?, numero_cifrado = ?, comuna = ?, provincia = ?, region = ? WHERE direccion_id = ?",
+        [cif.cifrar(d.calle.trim()), cif.cifrar(String(d.numero).trim()), d.comuna.trim(), d.provincia.trim(), d.region.trim(), dp.direccion_id]);
+    });
+    // el nombre de la cuenta (el que muestra la sesión) lo administra Auth
+    await callService(`${AUTH}/internal/accounts/${id}`, { method: "PATCH", token: clientsAuthToken, correlationId: req.correlationId, body: { nombre: b.nombre.trim() } }).catch(() => {});
+    res.json({ clienteId: id, nombre: b.nombre.trim(), direccion: { calle: d.calle.trim(), numero: String(d.numero).trim(), comuna: d.comuna.trim(), provincia: d.provincia.trim(), region: d.region.trim() } });
+  }));
+
+  // S25 — habilitar o deshabilitar al cliente (Auth es la autoridad de la cuenta; deshabilitar revoca sus sesiones)
+  app.patch("/clients/:id/estado", allowCallers("gateway"), requireUser("ADMIN"), h(async (req, res) => {
+    const id = V.requireUUID(req.params.id, "clienteId");
+    V.assertObject(req.body);
+    const destino = { ACTIVO: "ACTIVA", INACTIVO: "BLOQUEADA" }[req.body.estado];
+    if (!destino) throw E.badRequest("estado debe ser ACTIVO o INACTIVO");
+    await clienteVigente(pool, id);
+    const r = await callService(`${AUTH}/internal/accounts/${id}`, { method: "PATCH", token: clientsAuthToken, correlationId: req.correlationId, body: { estado: destino } });
+    if (r.status !== 200) throw E.unavailable("No fue posible actualizar la cuenta");
+    res.json({ clienteId: id, estado: ESTADO_CLIENTE[r.body.estado] || r.body.estado });
+  }));
+
+  // S26 — eliminar los datos personales a solicitud del titular (anonimización): se borran RUN, teléfono, nacimiento, sexo y direcciones;
+  // el registro queda como "Cliente eliminado" para conservar pedidos y boletas (historial y obligación tributaria).
+  app.delete("/clients/:id", allowCallers("gateway"), requireUser("ADMIN"), h(async (req, res) => {
+    const id = V.requireUUID(req.params.id, "clienteId");
+    await clienteVigente(pool, id);
+    // primero Auth: si no responde, no se borra nada y el ADMIN puede reintentar
+    const r = await callService(`${AUTH}/internal/accounts/${id}/anonimizar`, { method: "POST", token: clientsAuthToken, correlationId: req.correlationId, body: {} });
+    if (r.status !== 204) throw E.unavailable("No fue posible eliminar la cuenta");
+    await tx(pool, async (conn) => {
+      await clienteVigente(conn, id, true);
+      const vacio = cif.cifrar("");
+      await conn.query(`UPDATE clientes SET nombre = 'Cliente eliminado', email = ?, run_cifrado = ?, run_hash = ?, telefono_cifrado = ?, fecha_nac_cifrada = ?,
+        sexo_cifrado = ?, eliminado_en = UTC_TIMESTAMP() WHERE cliente_id = ?`, [`eliminado-${id}@fukusuke.invalid`, vacio, sha256(`eliminado:${id}`), vacio, vacio, vacio, id]);
+      await conn.query("DELETE FROM direcciones WHERE cliente_id = ?", [id]);
+      await conn.query("DELETE FROM tokens_verificacion WHERE cuenta_id = ?", [id]);
+    });
+    log.info("datos de cliente eliminados", { clienteId: id, por: req.user.sub });
+    res.status(204).end();
+  }));
+
   // S14 — contacto
   app.post("/contact", allowCallers("gateway"), h(async (req, res) => {
     V.assertObject(req.body);

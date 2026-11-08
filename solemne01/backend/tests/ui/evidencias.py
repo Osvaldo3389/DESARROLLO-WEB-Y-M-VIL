@@ -82,7 +82,7 @@ bloques["E5_puertos_compose"] = [("$ docker compose config   # puertos publicado
 bloques["E6_secretos"] = [("$ ./scripts/verificar-secretos.sh", sh("bash scripts/verificar-secretos.sh"))]
 
 # E7: resumen de pruebas automatizadas
-bloques["E7_pruebas"] = [("$ NODE_EXTRA_CA_CERTS=secrets/tls-ca-cert npm test", open(os.path.join(RAIZ, "tests", "resultados", "npm-test.txt")).read().strip())]
+bloques["E7_pruebas"] = [("$ npm test", open(os.path.join(RAIZ, "tests", "resultados", "npm-test.txt")).read().strip())]
 
 # E8: resumen k6
 k6 = open(os.path.join(RAIZ, "tests", "resultados", "k6-salida.txt")).read()

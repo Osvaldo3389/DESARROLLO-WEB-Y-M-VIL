@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-11-06T22:35:21.996Z",
+  "fecha": "2026-11-08T01:52:57.349Z",
   "resultados": [
     {
       "id": "V1",
@@ -61,7 +61,7 @@
       "id": "T06",
       "caso": "Pago Servipag sandbox (RF4/CU6)",
       "esperado": "aviso 200; pedido PAGADO; boleta del cajero virtual",
-      "obtenido": "aviso 200; PAGADO; boleta B-000005",
+      "obtenido": "aviso 200; PAGADO; boleta B-000001",
       "ok": true
     },
     {
@@ -75,21 +75,21 @@
       "id": "T06b",
       "caso": "Boleta enviada por correo (RF8)",
       "esperado": "correo con la boleta en la bandeja del cliente",
-      "obtenido": "recibido: Boleta B-000005 — Fukusuke Sushi-Delivery",
+      "obtenido": "recibido: Boleta B-000001 — Fukusuke Sushi-Delivery",
       "ok": true
     },
     {
       "id": "T08",
       "caso": "Boleta propia vs ajena (RF8, S13, G01)",
       "esperado": "G01 con folio y productos (1 llamada a inventory); ajeno NOT_FOUND; S13 ajeno 404",
-      "obtenido": "folio B-000005; llamadas inventory 1; ajeno NOT_FOUND; S13 404",
+      "obtenido": "folio B-000001; llamadas inventory 1; ajeno NOT_FOUND; S13 404",
       "ok": true
     },
     {
       "id": "T07",
       "caso": "Confirmación de depósito (S12, S21)",
       "esperado": "CLIENTE 403; ADMIN 200 con folio; N° operación repetido 422",
-      "obtenido": "403; 200 B-000006; 422",
+      "obtenido": "403; 200 B-000002; 422",
       "ok": true
     },
     {
@@ -103,7 +103,7 @@
       "id": "T10",
       "caso": "Reporte de ventas (RF9/CU8, S19)",
       "esperado": "200 con agregados sin datos personales; DESPACHO 403; rango > 366 días 400",
-      "obtenido": "200 (1006 pedidos, $17090890); 403; 400",
+      "obtenido": "200 (1002 pedidos, $17031470); 403; 400",
       "ok": true
     },
     {
@@ -125,6 +125,27 @@
       "caso": "La carta solo muestra productos habilitados (RF1/RF7)",
       "esperado": "producto deshabilitado no aparece en S01",
       "obtenido": "oculto: true",
+      "ok": true
+    },
+    {
+      "id": "T14",
+      "caso": "Mantenedor de clientes (RF10/CU3, S22–S26)",
+      "esperado": "buscar por correo/RUN 200 (RUN enmascarado, sin teléfono); ficha 200; editar 200; INACTIVO revoca sesión (401) y bloquea login (403); ACTIVO 200; eliminar 204 → 404, sin direcciones",
+      "obtenido": "200 (total 1, por RUN 1); 200; 200; INACTIVO: refresh 401, login 403; ACTIVO; 204 → 404; direcciones 0; login 401",
+      "ok": true
+    },
+    {
+      "id": "T15",
+      "caso": "Mantenedor de usuarios del personal (RF10/CU2, S27–S29)",
+      "esperado": "listar 200 sin hashes; crear 201 (correo repetido 409, rol CLIENTE 400); el nuevo DESPACHO entra a la cola; cambio de rol revoca sesión; BLOQUEADA impide login (403); ADMIN no se deshabilita a sí mismo (409)",
+      "obtenido": "200; 201 (409, 400); cola 200; rol DUENO, refresh 401; BLOQUEADA, login 403; propio 409",
+      "ok": true
+    },
+    {
+      "id": "V11",
+      "caso": "Mantenedores desde roles sin permiso",
+      "esperado": "CLIENTE listar/eliminar clientes 403; DESPACHO crear usuario 403; anónimo 401",
+      "obtenido": "403 / 403 / 403 / 401",
       "ok": true
     },
     {
@@ -152,7 +173,7 @@
       "id": "T13",
       "caso": "Falla de inventory (disponibilidad)",
       "esperado": "503 y no se crea pedido; G01 con producto null + INVENTORY_UNAVAILABLE",
-      "obtenido": "503; pedidos 2800→2800; G01 parcial: true",
+      "obtenido": "503; pedidos 1003→1003; G01 parcial: true",
       "ok": true
     },
     {
@@ -197,21 +218,21 @@
       "method": "GET",
       "ruta": "/api/v1/products?size=50",
       "status": 200,
-      "resumen": "{\"items\":[{\"id\":\"0a5b5bea-f814-4e31-b0f3-c36eba8f136e\",\"nombre\":\"California Roll\",\"descripcion\":\"Roll clásico relleno de kanikama, palta y pepino, cubierto c..."
+      "resumen": "{\"items\":[{\"id\":\"a579e431-da21-42d1-96a0-77291025cbfc\",\"nombre\":\"California Roll\",\"descripcion\":\"Roll clásico relleno de kanikama, palta y pepino, cubierto c..."
     },
     {
       "quien": "VISITANTE",
       "method": "GET",
       "ruta": "/api/v1/products?categoria=rolls",
       "status": 200,
-      "resumen": "{\"items\":[{\"id\":\"0a5b5bea-f814-4e31-b0f3-c36eba8f136e\",\"nombre\":\"California Roll\",\"descripcion\":\"Roll clásico relleno de kanikama, palta y pepino, cubierto c..."
+      "resumen": "{\"items\":[{\"id\":\"a579e431-da21-42d1-96a0-77291025cbfc\",\"nombre\":\"California Roll\",\"descripcion\":\"Roll clásico relleno de kanikama, palta y pepino, cubierto c..."
     },
     {
       "quien": "VISITANTE",
       "method": "POST",
       "ruta": "/api/v1/clients",
       "status": 201,
-      "resumen": "{\"clienteId\":\"413dbefa-77a9-400e-b5b8-cb717f844d59\",\"email\":\"qa.1794004510055@example.com\",\"estado\":\"PENDIENTE_VERIFICACION\"}"
+      "resumen": "{\"clienteId\":\"7313237b-79fc-4444-a051-49693a1c2009\",\"email\":\"qa.1794102767788@example.com\",\"estado\":\"PENDIENTE_VERIFICACION\"}"
     },
     {
       "quien": "VISITANTE",
@@ -239,7 +260,7 @@
       "method": "POST",
       "ruta": "/api/v1/clients/email-verification",
       "status": 200,
-      "resumen": "{\"estado\":\"ACTIVO\",\"cuentaId\":\"413dbefa-77a9-400e-b5b8-cb717f844d59\"}"
+      "resumen": "{\"estado\":\"ACTIVO\",\"cuentaId\":\"7313237b-79fc-4444-a051-49693a1c2009\"}"
     },
     {
       "quien": "VISITANTE",
@@ -253,7 +274,7 @@
       "method": "POST",
       "ruta": "/api/v1/clients",
       "status": 201,
-      "resumen": "{\"clienteId\":\"63609290-db7e-46cf-a598-8b2f5ef27128\",\"email\":\"qa2.1794004510750@example.com\",\"estado\":\"PENDIENTE_VERIFICACION\"}"
+      "resumen": "{\"clienteId\":\"c0da1d78-9eb4-43fe-91a8-bd0153648891\",\"email\":\"qa2.1794102768622@example.com\",\"estado\":\"PENDIENTE_VERIFICACION\"}"
     },
     {
       "quien": "VISITANTE",
@@ -274,7 +295,7 @@
       "method": "GET",
       "ruta": "/api/v1/clients/me",
       "status": 200,
-      "resumen": "{\"nombre\":\"Prueba Integración\",\"email\":\"qa.1794004510055@example.com\",\"run\":\"22.***.***-1\",\"direcciones\":[{\"direccionId\":\"23be52f9-857c-4de5-b262-12344b05a95..."
+      "resumen": "{\"nombre\":\"Prueba Integración\",\"email\":\"qa.1794102767788@example.com\",\"run\":\"22.***.***-0\",\"direcciones\":[{\"direccionId\":\"a5ad67f4-ceee-48ce-8217-9c4802a6034..."
     },
     {
       "quien": "VISITANTE",
@@ -288,56 +309,56 @@
       "method": "POST",
       "ruta": "/api/v1/orders",
       "status": 201,
-      "resumen": "{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"PENDIENTE_PAGO\",\"total\":13470,\"creadoEn\":\"2026-11-06T22:35:11.686Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
+      "resumen": "{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"PENDIENTE_PAGO\",\"total\":13470,\"creadoEn\":\"2026-11-08T01:52:49.880Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
     },
     {
       "quien": "CLIENTE A",
       "method": "PUT",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313/items/1c4087b8-3fe0-4497-bb90-ce611...",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a/items/b91a49c1-68a6-4efa-8799-0f309...",
       "status": 200,
-      "resumen": "{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"PENDIENTE_PAGO\",\"total\":19460,\"creadoEn\":\"2026-11-06T22:35:11.686Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
+      "resumen": "{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"PENDIENTE_PAGO\",\"total\":19460,\"creadoEn\":\"2026-11-08T01:52:49.880Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
     },
     {
       "quien": "CLIENTE A",
       "method": "PATCH",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313/items/dc1a812a-fffd-483a-962a-950ba...",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a/items/b05fb7b2-72d1-4452-920f-1e4bd...",
       "status": 400,
       "resumen": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"El motivo debe tener entre 5 y 200 caracteres\"}}"
     },
     {
       "quien": "CLIENTE A",
       "method": "PATCH",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313/items/dc1a812a-fffd-483a-962a-950ba...",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a/items/b05fb7b2-72d1-4452-920f-1e4bd...",
       "status": 200,
-      "resumen": "{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"PENDIENTE_PAGO\",\"total\":17970,\"creadoEn\":\"2026-11-06T22:35:11.686Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
+      "resumen": "{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"PENDIENTE_PAGO\",\"total\":17970,\"creadoEn\":\"2026-11-08T01:52:49.880Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
     },
     {
       "quien": "CLIENTE B",
       "method": "GET",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a",
       "status": 404,
       "resumen": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Pedido no encontrado\"}}"
     },
     {
       "quien": "CLIENTE A",
       "method": "GET",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a",
       "status": 200,
-      "resumen": "{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"PENDIENTE_PAGO\",\"total\":17970,\"creadoEn\":\"2026-11-06T22:35:11.686Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
+      "resumen": "{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"PENDIENTE_PAGO\",\"total\":17970,\"creadoEn\":\"2026-11-08T01:52:49.880Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
     },
     {
       "quien": "CLIENTE A",
       "method": "POST",
       "ruta": "/api/v1/payments",
       "status": 201,
-      "resumen": "{\"pagoId\":\"b18e0cb4-750b-4833-9ce2-4c15f05ab1ba\",\"estado\":\"PENDIENTE\",\"redirectUrl\":\"http://localhost:8090/pagar/d3584a48d486ad2183303f40\"}"
+      "resumen": "{\"pagoId\":\"1d4abb74-8060-4640-87fb-19bf9677e714\",\"estado\":\"PENDIENTE\",\"redirectUrl\":\"http://localhost:8090/pagar/37a8afaf08730604efc1ee76\"}"
     },
     {
       "quien": "CLIENTE A",
       "method": "POST",
       "ruta": "/api/v1/payments",
       "status": 201,
-      "resumen": "{\"estado\":\"PENDIENTE\",\"pagoId\":\"b18e0cb4-750b-4833-9ce2-4c15f05ab1ba\",\"redirectUrl\":\"http://localhost:8090/pagar/d3584a48d486ad2183303f40\"}"
+      "resumen": "{\"estado\":\"PENDIENTE\",\"pagoId\":\"1d4abb74-8060-4640-87fb-19bf9677e714\",\"redirectUrl\":\"http://localhost:8090/pagar/37a8afaf08730604efc1ee76\"}"
     },
     {
       "quien": "VISITANTE",
@@ -356,23 +377,23 @@
     {
       "quien": "CLIENTE A",
       "method": "GET",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a",
       "status": 200,
-      "resumen": "{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"PENDIENTE_PAGO\",\"total\":17970,\"creadoEn\":\"2026-11-06T22:35:11.686Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
+      "resumen": "{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"PENDIENTE_PAGO\",\"total\":17970,\"creadoEn\":\"2026-11-08T01:52:49.880Z\",\"pagadoEn\":null,\"comuna\":\"Ma..."
     },
     {
       "quien": "SERVIPAG (sandbox)",
       "method": "POST",
       "ruta": "/api/v1/payments/webhooks/servipag (firmado)",
       "status": 200,
-      "resumen": "transaccion SP-1794004511765-d3584a APROBADO"
+      "resumen": "transaccion SP-1794102770013-37a8af APROBADO"
     },
     {
       "quien": "CLIENTE A",
       "method": "GET",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a",
       "status": 200,
-      "resumen": "{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"PAGADO\",\"total\":17970,\"creadoEn\":\"2026-11-06T22:35:11.686Z\",\"pagadoEn\":\"2026-11-06T22:35:11.808Z..."
+      "resumen": "{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"PAGADO\",\"total\":17970,\"creadoEn\":\"2026-11-08T01:52:49.880Z\",\"pagadoEn\":\"2026-11-08T01:52:50.088Z..."
     },
     {
       "quien": "VISITANTE",
@@ -384,16 +405,16 @@
     {
       "quien": "CLIENTE A",
       "method": "GET",
-      "ruta": "/api/v1/payments/b18e0cb4-750b-4833-9ce2-4c15f05ab1ba/boleta",
+      "ruta": "/api/v1/payments/1d4abb74-8060-4640-87fb-19bf9677e714/boleta",
       "status": 200,
-      "resumen": "{\"folio\":\"B-000005\",\"fechaEmision\":\"2026-11-06T22:35:11.000Z\",\"cajeroVirtual\":\"Cajero Virtual 01\",\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"items\":[..."
+      "resumen": "{\"folio\":\"B-000001\",\"fechaEmision\":\"2026-11-08T01:52:50.000Z\",\"cajeroVirtual\":\"Cajero Virtual 01\",\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"items\":[..."
     },
     {
       "quien": "CLIENTE A",
       "method": "POST",
       "ruta": "/api/v1/graphql",
       "status": 200,
-      "resumen": "{\"data\":{\"resumenPedido\":{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"PAGADO\",\"total\":17970,\"creadoEn\":\"2026-11-06T22:35:11.686Z\",\"items\":[{\"..."
+      "resumen": "{\"data\":{\"resumenPedido\":{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"PAGADO\",\"total\":17970,\"creadoEn\":\"2026-11-08T01:52:49.880Z\",\"items\":[{\"..."
     },
     {
       "quien": "CLIENTE B",
@@ -405,7 +426,7 @@
     {
       "quien": "CLIENTE B",
       "method": "GET",
-      "ruta": "/api/v1/payments/b18e0cb4-750b-4833-9ce2-4c15f05ab1ba/boleta",
+      "ruta": "/api/v1/payments/1d4abb74-8060-4640-87fb-19bf9677e714/boleta",
       "status": 404,
       "resumen": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Pago no encontrado\"}}"
     },
@@ -414,54 +435,54 @@
       "method": "POST",
       "ruta": "/api/v1/orders",
       "status": 201,
-      "resumen": "{\"pedidoId\":\"be81c830-3930-4c30-a896-2b15790c88b6\",\"estado\":\"PENDIENTE_PAGO\",\"total\":4990,\"creadoEn\":\"2026-11-06T22:35:12.171Z\",\"pagadoEn\":null,\"comuna\":\"Mai..."
+      "resumen": "{\"pedidoId\":\"6eb39639-2243-4295-bd03-6819fcf9921b\",\"estado\":\"PENDIENTE_PAGO\",\"total\":4990,\"creadoEn\":\"2026-11-08T01:52:50.527Z\",\"pagadoEn\":null,\"comuna\":\"Mai..."
     },
     {
       "quien": "CLIENTE A",
       "method": "POST",
       "ruta": "/api/v1/payments",
       "status": 201,
-      "resumen": "{\"pagoId\":\"9e3d6884-2e23-42df-9437-f48b13b07d1a\",\"estado\":\"PENDIENTE\",\"instruccionesDeposito\":{\"banco\":\"Banco de prueba\",\"cuenta\":\"Cuenta corriente 00-111-22..."
+      "resumen": "{\"pagoId\":\"d673b3ba-0c4c-4b6f-8920-441573459f9a\",\"estado\":\"PENDIENTE\",\"instruccionesDeposito\":{\"banco\":\"Banco de prueba\",\"cuenta\":\"Cuenta corriente 00-111-22..."
     },
     {
       "quien": "ADMIN",
       "method": "GET",
       "ruta": "/api/v1/payments/pendientes",
       "status": 200,
-      "resumen": "[{\"pagoId\":\"796e2ebb-af9f-45c7-adce-33ea432a7081\",\"pedidoId\":\"f0713afe-4b73-4934-b7a6-ead7d8f67da5\",\"monto\":9980,\"referencia\":\"796E2EBB\",\"creadoEn\":\"2026-11-..."
+      "resumen": "[{\"pagoId\":\"d673b3ba-0c4c-4b6f-8920-441573459f9a\",\"pedidoId\":\"6eb39639-2243-4295-bd03-6819fcf9921b\",\"monto\":4990,\"referencia\":\"D673B3BA\",\"creadoEn\":\"2026-11-..."
     },
     {
       "quien": "CLIENTE A",
       "method": "POST",
-      "ruta": "/api/v1/payments/9e3d6884-2e23-42df-9437-f48b13b07d1a/confirmacion",
+      "ruta": "/api/v1/payments/d673b3ba-0c4c-4b6f-8920-441573459f9a/confirmacion",
       "status": 403,
       "resumen": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"No autorizado\"}}"
     },
     {
       "quien": "ADMIN",
       "method": "POST",
-      "ruta": "/api/v1/payments/9e3d6884-2e23-42df-9437-f48b13b07d1a/confirmacion",
+      "ruta": "/api/v1/payments/d673b3ba-0c4c-4b6f-8920-441573459f9a/confirmacion",
       "status": 200,
-      "resumen": "{\"pagoId\":\"9e3d6884-2e23-42df-9437-f48b13b07d1a\",\"estado\":\"APROBADO\",\"folioBoleta\":\"B-000006\"}"
+      "resumen": "{\"pagoId\":\"d673b3ba-0c4c-4b6f-8920-441573459f9a\",\"estado\":\"APROBADO\",\"folioBoleta\":\"B-000002\"}"
     },
     {
       "quien": "CLIENTE A",
       "method": "POST",
       "ruta": "/api/v1/orders",
       "status": 201,
-      "resumen": "{\"pedidoId\":\"67f39f9a-63dc-43cf-a3e5-8d5d0b5a07ac\",\"estado\":\"PENDIENTE_PAGO\",\"total\":9980,\"creadoEn\":\"2026-11-06T22:35:12.231Z\",\"pagadoEn\":null,\"comuna\":\"Mai..."
+      "resumen": "{\"pedidoId\":\"bf216291-bc00-44d3-b85d-8c35aa4710d8\",\"estado\":\"PENDIENTE_PAGO\",\"total\":9980,\"creadoEn\":\"2026-11-08T01:52:50.591Z\",\"pagadoEn\":null,\"comuna\":\"Mai..."
     },
     {
       "quien": "CLIENTE A",
       "method": "POST",
       "ruta": "/api/v1/payments",
       "status": 201,
-      "resumen": "{\"pagoId\":\"d936eda7-ef7f-428c-bc9b-d8c55825f471\",\"estado\":\"PENDIENTE\",\"instruccionesDeposito\":{\"banco\":\"Banco de prueba\",\"cuenta\":\"Cuenta corriente 00-111-22..."
+      "resumen": "{\"pagoId\":\"d89bb960-7aab-4175-8cb0-711321fd7f05\",\"estado\":\"PENDIENTE\",\"instruccionesDeposito\":{\"banco\":\"Banco de prueba\",\"cuenta\":\"Cuenta corriente 00-111-22..."
     },
     {
       "quien": "ADMIN",
       "method": "POST",
-      "ruta": "/api/v1/payments/d936eda7-ef7f-428c-bc9b-d8c55825f471/confirmacion",
+      "ruta": "/api/v1/payments/d89bb960-7aab-4175-8cb0-711321fd7f05/confirmacion",
       "status": 422,
       "resumen": "{\"error\":{\"code\":\"OPERACION_USADA\",\"message\":\"El número de operación ya fue utilizado\"}}"
     },
@@ -470,28 +491,28 @@
       "method": "GET",
       "ruta": "/api/v1/orders/dispatch-queue?first=50",
       "status": 200,
-      "resumen": "{\"edges\":[{\"pedidoId\":\"74d46ae0-6370-4553-8341-52fffe287710\",\"estado\":\"PAGADO\",\"pagadoEn\":\"2026-11-06T22:18:27.433Z\",\"calle\":\"Av. Pajaritos\",\"numero\":\"2020\",..."
+      "resumen": "{\"edges\":[{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"PAGADO\",\"pagadoEn\":\"2026-11-08T01:52:50.088Z\",\"calle\":\"Av. Pajaritos\",\"numero\":\"2020\",..."
     },
     {
       "quien": "DESPACHO",
       "method": "PATCH",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313/estado",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a/estado",
       "status": 409,
       "resumen": "{\"error\":{\"code\":\"TRANSICION_INVALIDA\",\"message\":\"Transición no permitida: PAGADO → ENTREGADO\"}}"
     },
     {
       "quien": "DESPACHO",
       "method": "PATCH",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313/estado",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a/estado",
       "status": 200,
-      "resumen": "{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"EN_PREPARACION\",\"ordenDespacho\":{\"ordenId\":\"e8617d2d-b35e-4cbf-b209-d289405fadf8\",\"impresaEn\":\"2..."
+      "resumen": "{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"EN_PREPARACION\",\"ordenDespacho\":{\"ordenId\":\"90d7db91-cc56-4802-b747-2f216b15311d\",\"impresaEn\":\"2..."
     },
     {
       "quien": "DESPACHO",
       "method": "POST",
       "ruta": "/api/v1/graphql",
       "status": 200,
-      "resumen": "{\"data\":{\"colaDespacho\":{\"hasNextPage\":false,\"endCursor\":\"MjAyNi0xMS0wNiAyMjozNToxMi4yMDV8YmU4MWM4MzAtMzkzMC00YzMwLWE4OTYtMmIxNTc5MGM4OGI2\",\"edges\":[{\"pedido..."
+      "resumen": "{\"data\":{\"colaDespacho\":{\"hasNextPage\":false,\"endCursor\":\"MjAyNi0xMS0wOCAwMTo1Mjo1MC41NzN8NmViMzk2MzktMjI0My00Mjk1LWJkMDMtNjgxOWZjZjk5MjFi\",\"edges\":[{\"pedido..."
     },
     {
       "quien": "CLIENTE A",
@@ -503,21 +524,21 @@
     {
       "quien": "DESPACHO",
       "method": "PATCH",
-      "ruta": "/api/v1/orders/d2bd318d-f8d9-4690-8bcc-a75ee5f9e313/estado",
+      "ruta": "/api/v1/orders/e15ccb7f-27e4-4835-9593-1d31d7b8f20a/estado",
       "status": 200,
-      "resumen": "{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"EN_CAMINO\",\"ordenDespacho\":{\"ordenId\":\"e8617d2d-b35e-4cbf-b209-d289405fadf8\",\"impresaEn\":\"2026-1..."
+      "resumen": "{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"EN_CAMINO\",\"ordenDespacho\":{\"ordenId\":\"90d7db91-cc56-4802-b747-2f216b15311d\",\"impresaEn\":\"2026-1..."
     },
     {
       "quien": "DUENO",
       "method": "GET",
-      "ruta": "/api/v1/reports/sales?desde=2026-10-07&hasta=2026-11-06",
+      "ruta": "/api/v1/reports/sales?desde=2026-10-09&hasta=2026-11-08",
       "status": 200,
-      "resumen": "{\"desde\":\"2026-10-07\",\"hasta\":\"2026-11-06\",\"totalVentas\":17090890,\"cantidadPedidos\":1006,\"ticketPromedio\":16989,\"porDia\":[{\"fecha\":\"2026-10-08\",\"total\":74868..."
+      "resumen": "{\"desde\":\"2026-10-09\",\"hasta\":\"2026-11-08\",\"totalVentas\":17031470,\"cantidadPedidos\":1002,\"ticketPromedio\":16997,\"porDia\":[{\"fecha\":\"2026-10-09\",\"total\":63042..."
     },
     {
       "quien": "DESPACHO",
       "method": "GET",
-      "ruta": "/api/v1/reports/sales?desde=2026-10-07&hasta=2026-11-06",
+      "ruta": "/api/v1/reports/sales?desde=2026-10-09&hasta=2026-11-08",
       "status": 403,
       "resumen": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"No autorizado\"}}"
     },
@@ -533,12 +554,12 @@
       "method": "POST",
       "ruta": "/api/v1/products",
       "status": 201,
-      "resumen": "{\"id\":\"25104152-a28a-4bfa-8df0-4068d750c88f\"}"
+      "resumen": "{\"id\":\"ca4747f2-40bd-414a-968e-160d8066d3ed\"}"
     },
     {
       "quien": "CLIENTE A",
       "method": "PUT",
-      "ruta": "/api/v1/products/25104152-a28a-4bfa-8df0-4068d750c88f",
+      "ruta": "/api/v1/products/ca4747f2-40bd-414a-968e-160d8066d3ed",
       "status": 403,
       "resumen": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"No autorizado\"}}"
     },
@@ -552,35 +573,252 @@
     {
       "quien": "CLIENTE A",
       "method": "DELETE",
-      "ruta": "/api/v1/products/25104152-a28a-4bfa-8df0-4068d750c88f",
+      "ruta": "/api/v1/products/ca4747f2-40bd-414a-968e-160d8066d3ed",
       "status": 405,
       "resumen": "{\"error\":{\"code\":\"METHOD_NOT_ALLOWED\",\"message\":\"Método no permitido\"}}"
     },
     {
       "quien": "ADMIN",
       "method": "GET",
-      "ruta": "/api/v1/products/25104152-a28a-4bfa-8df0-4068d750c88f",
+      "ruta": "/api/v1/products/ca4747f2-40bd-414a-968e-160d8066d3ed",
       "status": 200,
-      "resumen": "{\"id\":\"25104152-a28a-4bfa-8df0-4068d750c88f\",\"nombre\":\"Hand Roll Prueba 8329\",\"descripcion\":\"Producto de prueba\",\"formato\":\"1 unidad\",\"categoria\":\"temaki\",\"p..."
+      "resumen": "{\"id\":\"ca4747f2-40bd-414a-968e-160d8066d3ed\",\"nombre\":\"Hand Roll Prueba 706\",\"descripcion\":\"Producto de prueba\",\"formato\":\"1 unidad\",\"categoria\":\"temaki\",\"pr..."
     },
     {
       "quien": "ADMIN",
       "method": "PUT",
-      "ruta": "/api/v1/products/25104152-a28a-4bfa-8df0-4068d750c88f",
+      "ruta": "/api/v1/products/ca4747f2-40bd-414a-968e-160d8066d3ed",
       "status": 200,
-      "resumen": "{\"id\":\"25104152-a28a-4bfa-8df0-4068d750c88f\",\"nombre\":\"Hand Roll Prueba 8329\",\"descripcion\":\"Producto de prueba\",\"formato\":\"1 unidad\",\"categoria\":\"temaki\",\"p..."
+      "resumen": "{\"id\":\"ca4747f2-40bd-414a-968e-160d8066d3ed\",\"nombre\":\"Hand Roll Prueba 706\",\"descripcion\":\"Producto de prueba\",\"formato\":\"1 unidad\",\"categoria\":\"temaki\",\"pr..."
     },
     {
       "quien": "VISITANTE",
       "method": "GET",
       "ruta": "/api/v1/products?categoria=temaki&page=1&size=49",
       "status": 200,
-      "resumen": "{\"items\":[{\"id\":\"ac075be7-fb03-41b8-aabd-80318d2bab3e\",\"nombre\":\"Temaki Salmón\",\"descripcion\":\"Cono de alga nori relleno de arroz, salmón, palta y cebollín. ..."
+      "resumen": "{\"items\":[{\"id\":\"336be368-934e-463b-8477-9ec7c8e70538\",\"nombre\":\"Temaki Salmón\",\"descripcion\":\"Cono de alga nori relleno de arroz, salmón, palta y cebollín. ..."
+    },
+    {
+      "quien": "VISITANTE",
+      "method": "POST",
+      "ruta": "/api/v1/clients",
+      "status": 201,
+      "resumen": "{\"clienteId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\",\"email\":\"qa3.1794102770768@example.com\",\"estado\":\"PENDIENTE_VERIFICACION\"}"
+    },
+    {
+      "quien": "VISITANTE",
+      "method": "POST",
+      "ruta": "/api/v1/clients/email-verification",
+      "status": 200,
+      "resumen": "{\"estado\":\"ACTIVO\",\"cuentaId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\"}"
+    },
+    {
+      "quien": "CLIENTE C",
+      "method": "POST",
+      "ruta": "/api/v1/auth/login",
+      "status": 200,
+      "resumen": "{\"nombre\":\"Cliente Mantenedor\",\"rol\":\"CLIENTE\"}"
+    },
+    {
+      "quien": "ADMIN",
+      "method": "GET",
+      "ruta": "/api/v1/clients?q=qa3.1794102770768%40example.com",
+      "status": 200,
+      "resumen": "{\"items\":[{\"clienteId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\",\"nombre\":\"Cliente Mantenedor\",\"email\":\"qa3.1794102770768@example.com\",\"run\":\"46.***.***-K\",\"com..."
+    },
+    {
+      "quien": "ADMIN",
+      "method": "GET",
+      "ruta": "/api/v1/clients?q=46.770.768-K",
+      "status": 200,
+      "resumen": "{\"items\":[{\"clienteId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\",\"nombre\":\"Cliente Mantenedor\",\"email\":\"qa3.1794102770768@example.com\",\"run\":\"46.***.***-K\",\"com..."
+    },
+    {
+      "quien": "ADMIN",
+      "method": "GET",
+      "ruta": "/api/v1/clients/27b5ceca-c443-4dc9-ba1f-766813709a67",
+      "status": 200,
+      "resumen": "{\"clienteId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\",\"nombre\":\"Cliente Mantenedor\",\"email\":\"qa3.1794102770768@example.com\",\"run\":\"46.***.***-K\",\"telefono\":\"+5..."
+    },
+    {
+      "quien": "ADMIN",
+      "method": "PUT",
+      "ruta": "/api/v1/clients/27b5ceca-c443-4dc9-ba1f-766813709a67",
+      "status": 200,
+      "resumen": "{\"clienteId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\",\"nombre\":\"Cliente Mantenedor Editado\",\"direccion\":{\"calle\":\"Camino a Rinconada\",\"numero\":\"999\",\"comuna\":\"..."
+    },
+    {
+      "quien": "ADMIN",
+      "method": "GET",
+      "ruta": "/api/v1/clients/27b5ceca-c443-4dc9-ba1f-766813709a67",
+      "status": 200,
+      "resumen": "{\"clienteId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\",\"nombre\":\"Cliente Mantenedor Editado\",\"email\":\"qa3.1794102770768@example.com\",\"run\":\"46.***.***-K\",\"telef..."
+    },
+    {
+      "quien": "ADMIN",
+      "method": "PATCH",
+      "ruta": "/api/v1/clients/27b5ceca-c443-4dc9-ba1f-766813709a67/estado",
+      "status": 200,
+      "resumen": "{\"clienteId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\",\"estado\":\"INACTIVO\"}"
+    },
+    {
+      "quien": "CLIENTE C",
+      "method": "POST",
+      "ruta": "/api/v1/auth/refresh",
+      "status": 401,
+      "resumen": "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Sesión revocada por reutilización de token\"}}"
+    },
+    {
+      "quien": "CLIENTE C (2)",
+      "method": "POST",
+      "ruta": "/api/v1/auth/login",
+      "status": 403,
+      "resumen": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Cuenta no habilitada\"}}"
+    },
+    {
+      "quien": "ADMIN",
+      "method": "PATCH",
+      "ruta": "/api/v1/clients/27b5ceca-c443-4dc9-ba1f-766813709a67/estado",
+      "status": 200,
+      "resumen": "{\"clienteId\":\"27b5ceca-c443-4dc9-ba1f-766813709a67\",\"estado\":\"ACTIVO\"}"
+    },
+    {
+      "quien": "ADMIN",
+      "method": "DELETE",
+      "ruta": "/api/v1/clients/27b5ceca-c443-4dc9-ba1f-766813709a67",
+      "status": 204,
+      "resumen": ""
+    },
+    {
+      "quien": "ADMIN",
+      "method": "GET",
+      "ruta": "/api/v1/clients/27b5ceca-c443-4dc9-ba1f-766813709a67",
+      "status": 404,
+      "resumen": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Cliente no encontrado\"}}"
+    },
+    {
+      "quien": "ADMIN",
+      "method": "GET",
+      "ruta": "/api/v1/clients?q=qa3.1794102770768%40example.com",
+      "status": 200,
+      "resumen": "{\"items\":[],\"page\":1,\"size\":20,\"total\":0}"
+    },
+    {
+      "quien": "CLIENTE C (3)",
+      "method": "POST",
+      "ruta": "/api/v1/auth/login",
+      "status": 401,
+      "resumen": "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Credenciales inválidas\"}}"
+    },
+    {
+      "quien": "ADMIN",
+      "method": "GET",
+      "ruta": "/api/v1/users",
+      "status": 200,
+      "resumen": "{\"items\":[{\"cuentaId\":\"f1a422e9-024d-4171-8829-32701a8fa483\",\"nombre\":\"Administración Fukusuke\",\"email\":\"admin@fukusuke.cl\",\"rol\":\"ADMIN\",\"estado\":\"ACTIVA\",\"..."
+    },
+    {
+      "quien": "ADMIN",
+      "method": "POST",
+      "ruta": "/api/v1/users",
+      "status": 201,
+      "resumen": "{\"cuentaId\":\"d8a86cdf-0a7e-4aef-a408-e50c31ed132b\",\"nombre\":\"Cocina Turno Noche\",\"email\":\"cocina.1794102772096@fukusuke.cl\",\"rol\":\"DESPACHO\",\"estado\":\"ACTIVA..."
+    },
+    {
+      "quien": "ADMIN",
+      "method": "POST",
+      "ruta": "/api/v1/users",
+      "status": 409,
+      "resumen": "{\"error\":{\"code\":\"CONFLICT\",\"message\":\"Ya existe una cuenta con ese correo\"}}"
+    },
+    {
+      "quien": "ADMIN",
+      "method": "POST",
+      "ruta": "/api/v1/users",
+      "status": 400,
+      "resumen": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Datos de usuario inválidos\",\"details\":{\"campos\":[\"rol\"]}}}"
+    },
+    {
+      "quien": "DESPACHO nuevo",
+      "method": "POST",
+      "ruta": "/api/v1/auth/login",
+      "status": 200,
+      "resumen": "{\"nombre\":\"Cocina Turno Noche\",\"rol\":\"DESPACHO\"}"
+    },
+    {
+      "quien": "DESPACHO nuevo",
+      "method": "GET",
+      "ruta": "/api/v1/orders/dispatch-queue?first=5",
+      "status": 200,
+      "resumen": "{\"edges\":[{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"EN_CAMINO\",\"pagadoEn\":\"2026-11-08T01:52:50.088Z\",\"calle\":\"Av. Pajaritos\",\"numero\":\"202..."
+    },
+    {
+      "quien": "ADMIN",
+      "method": "PATCH",
+      "ruta": "/api/v1/users/d8a86cdf-0a7e-4aef-a408-e50c31ed132b",
+      "status": 200,
+      "resumen": "{\"cuentaId\":\"d8a86cdf-0a7e-4aef-a408-e50c31ed132b\",\"nombre\":\"Cocina Turno Noche\",\"email\":\"cocina.1794102772096@fukusuke.cl\",\"rol\":\"DUENO\",\"estado\":\"ACTIVA\",\"..."
+    },
+    {
+      "quien": "DESPACHO nuevo",
+      "method": "POST",
+      "ruta": "/api/v1/auth/refresh",
+      "status": 401,
+      "resumen": "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Sesión revocada por reutilización de token\"}}"
+    },
+    {
+      "quien": "ADMIN",
+      "method": "PATCH",
+      "ruta": "/api/v1/users/d8a86cdf-0a7e-4aef-a408-e50c31ed132b",
+      "status": 200,
+      "resumen": "{\"cuentaId\":\"d8a86cdf-0a7e-4aef-a408-e50c31ed132b\",\"nombre\":\"Cocina Turno Noche\",\"email\":\"cocina.1794102772096@fukusuke.cl\",\"rol\":\"DUENO\",\"estado\":\"BLOQUEADA..."
+    },
+    {
+      "quien": "DESPACHO bloqueado",
+      "method": "POST",
+      "ruta": "/api/v1/auth/login",
+      "status": 403,
+      "resumen": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Cuenta no habilitada\"}}"
+    },
+    {
+      "quien": "ADMIN",
+      "method": "PATCH",
+      "ruta": "/api/v1/users/f1a422e9-024d-4171-8829-32701a8fa483",
+      "status": 409,
+      "resumen": "{\"error\":{\"code\":\"CONFLICT\",\"message\":\"No puedes cambiar el rol ni deshabilitar tu propia cuenta\"}}"
+    },
+    {
+      "quien": "CLIENTE A",
+      "method": "GET",
+      "ruta": "/api/v1/clients",
+      "status": 403,
+      "resumen": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"No autorizado\"}}"
+    },
+    {
+      "quien": "CLIENTE A",
+      "method": "DELETE",
+      "ruta": "/api/v1/clients/4bbf98b1-43ce-47c0-b9d6-c4e7a8ec841e",
+      "status": 403,
+      "resumen": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"No autorizado\"}}"
+    },
+    {
+      "quien": "DESPACHO",
+      "method": "POST",
+      "ruta": "/api/v1/users",
+      "status": 403,
+      "resumen": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"No autorizado\"}}"
+    },
+    {
+      "quien": "VISITANTE",
+      "method": "GET",
+      "ruta": "/api/v1/users",
+      "status": 401,
+      "resumen": "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Debes iniciar sesión\"}}"
     },
     {
       "quien": "curl directo",
       "method": "GET",
-      "ruta": "http://127.0.0.1:8082/orders/d2bd318d…",
+      "ruta": "http://127.0.0.1:8082/orders/e15ccb7f…",
       "status": 401,
       "resumen": "Falta credencial de servicio"
     },
@@ -624,7 +862,7 @@
       "method": "POST",
       "ruta": "/api/v1/graphql",
       "status": 200,
-      "resumen": "{\"data\":{\"resumenPedido\":{\"pedidoId\":\"d2bd318d-f8d9-4690-8bcc-a75ee5f9e313\",\"estado\":\"EN_CAMINO\",\"total\":17970,\"creadoEn\":\"2026-11-06T22:35:11.686Z\",\"items\":..."
+      "resumen": "{\"data\":{\"resumenPedido\":{\"pedidoId\":\"e15ccb7f-27e4-4835-9593-1d31d7b8f20a\",\"estado\":\"EN_CAMINO\",\"total\":17970,\"creadoEn\":\"2026-11-08T01:52:49.880Z\",\"items\":..."
     },
     {
       "quien": "ATACANTE",
