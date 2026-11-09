@@ -542,42 +542,34 @@ a {
     padding: 40px 0;
     text-align: center;
 }
-
 .tarjeta-info {
     background: var(--color-fondo-suave);
     border-radius: 14px;
     padding: 26px;
     height: 100%;
 }
-
 .tarjeta-info .icono {
     font-size: 2rem;
     margin-bottom: 10px;
 }
-
 /* ===== FOOTER ===== */
-
 footer {
     background-color: var(--color-texto);
     color: #D1D5DB;
     padding: 40px 0 20px;
     margin-top: 40px;
 }
-
 footer h6 {
     color: #FFFFFF;
     font-weight: 700;
     margin-bottom: 14px;
 }
-
 footer a {
     color: #D1D5DB;
 }
-
 footer a:hover {
     color: var(--color-destacado);
 }
-
 footer .copyright {
     border-top: 1px solid #374151;
     margin-top: 26px;
@@ -586,9 +578,7 @@ footer .copyright {
     font-size: 0.85rem;
     color: #9CA3AF;
 }
-
 /* ===== ALERTAS ===== */
-
 .alerta-radio {
     background-color: #FEF2F2;
     border: 1px solid var(--color-destacado);
