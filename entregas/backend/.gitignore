@@ -1,0 +1,6 @@
+node_modules/
+secrets/
+.run/
+.env
+tests/resultados/*.csv
+!tests/resultados/recursos-cpu.csv
