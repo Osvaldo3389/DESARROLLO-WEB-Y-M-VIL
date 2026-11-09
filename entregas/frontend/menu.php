@@ -5,14 +5,11 @@
     <title>Fukusuke Sushi-Delivery | Carta</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <link href="vendor/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="vendor/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
     <link href="css/paleta-de-colores.css" rel="stylesheet">
     <link href="css/estilos.css" rel="stylesheet">
 </head>
-
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark">
