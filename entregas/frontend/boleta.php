@@ -95,7 +95,7 @@
         document.getElementById("metodo-boleta").textContent =
             localStorage.getItem("fukusukeMetodoPago") || "—";
 
-        // Se vacía el carrito una vez emitida la boleta
+        // Se limpia el carrito una vez emitida la boleta
         localStorage.removeItem("fukusukeCarrito");
     </script>
 </body>
