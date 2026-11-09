@@ -1,5 +1,4 @@
 // Las imágenes son fotografías reales (libres de uso, obtenidas de Wikimedia Commons)
-// guardadas localmente en la carpeta img/ para que el sitio funcione sin conexión a internet.
 const productos = [
     {
         id: 1,
